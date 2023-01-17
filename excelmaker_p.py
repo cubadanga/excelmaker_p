@@ -66,10 +66,11 @@ def inputPass(password,passTag):
 
 judge(password,passTag)
 
-
-df = pd.read_excel('./product.xlsx', sheet_name = 'write', header = 0)
-setpd = pd.read_excel('./product.xlsx', sheet_name = 'setting', header = 0)
-
+try:
+    df = pd.read_excel('./product.xlsx', sheet_name = 'write', header = 0)
+    setpd = pd.read_excel('./product.xlsx', sheet_name = 'setting', header = 0)
+except ValueError as e:
+    print('엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.')
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
@@ -97,7 +98,8 @@ fee_naver = set_list[18]    #네이버수수료
 marginMin = set_list[19]    #최소마진
 naver_top = set_list[20]    #스스 상세페이지에 삽입되는 상단이미지
 naver_bottom = set_list[21] #스스 상세페이지에 삽입되는 하단이미지
-addDescBool = set_list[22]  #개인 상세페이지 상,하단 이미지 사용 유무
+naver_bottom2 = set_list[22] #스스 상세페이지에 삽입되는 하단이미지 2
+addDescBool = set_list[23]  #개인 상세페이지 상,하단 이미지 사용 유무
 
 
 # ### url 필드에서 상품ID 추출
@@ -198,7 +200,7 @@ elif optionColcnt == 5:
 elif optionColcnt == 4:
     optionT1 = option_gooddf[0]
 
-# ### 기본 판매가 계산(옵션별 판매가격 계산)
+# ### 기본 판매가 계산(옵션별 판매가격 계산)*
 # * 구매원가 = 위안화x타오수수료x환율+실제배송비
 # * 기본가 = 구매원가*가중치
 # * 마진 = 기본가-스토어수수료-상품가-실제배송비
@@ -221,7 +223,9 @@ price_min = goods_clear['기본가격'].min()
 
 # * 단순히 판매가의 30%올림
 basePrice = price_min*1.3
-
+price_correction = basePrice
+price_correction = np.int64(price_correction)
+goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기본가격'].min(),-2)
 
 '''
     if price_max-price_min == 0:
@@ -401,6 +405,7 @@ descPages = re.sub("< ", "<", descPages1)+'\n'
 descPname = '<br><br><h1 style="text-align: center;"><strong>' + pName + "</strong></h1><br><br>"+'\n'
 naverTop = '<img src=' + '"' + naver_top + '"/>'+'\n'
 naverBottom = '<img src="'+ naver_bottom + '"/>'+'\n'
+naverBottom2 = '<img src="'+ naver_bottom2 + '"/>'+'\n'
 #shop11Top = '<img src="' + shop11st_top + '"/>'+'\n'
 #shop11stBottom = '<img src="' + shop11st_bottom + '"/>'+'\n'
 
@@ -411,7 +416,6 @@ img_optionTag = img_option.str.replace('<img src="','')
 img_optionTag = img_optionTag.str.replace('"/>','')
 
 op_imgurls = img_optionTag.values.tolist()
-print(op_imgurls)
 OpTitle = df_filter[optionT1]
 op_titlelist = OpTitle.values.tolist()
 optionLen = len(op_titlelist)
@@ -432,20 +436,10 @@ desc11st = ""
 p_desc = ""
 
 if addDescBool == 0:
-    descNaver = naverTop + descPname + descPages + optionHtml + naverBottom
+    descNaver = naverTop + descPname + descPages + optionHtml + naverBottom + naverBottom2
     #desc11st = shop11Top + descPname + descPages + optionHtml + shop11stBottom
     p_desc = descPname + descPages + optionHtml
 elif addDescBool ==1:
-    descNaver = naverTop + descPname + descPages + optionHtml + naverBottom
-    #desc11st = descPname + descPages + optionHtml
-    p_desc = descPname + descPages + optionHtml
-
-elif addDescBool ==2:
-    descNaver = descPname + descPages + optionHtml
-    #desc11st = shop11Top + descPname + descPages + optionHtml + shop11stBottom
-    p_desc = descPname + descPages + optionHtml
-
-elif addDescBool ==3:
     descNaver = descPname + descPages + optionHtml
     #desc11st = descPname + descPages + optionHtml
     p_desc = descPname + descPages + optionHtml
@@ -487,7 +481,10 @@ ship_price = str(ship_price)
 # ###이미지 파일을 불러옴
 file_path = './mainImages'
 output_path = './mainImages'
-file_names = os.listdir(file_path)
+try:
+    file_names = os.listdir(file_path)
+except FileNotFoundError as e:
+    print('mainImage(메인이미지) 폴더가 존재하지 않습니다.')
 
 if len(file_names) > 0:
     i = 1
