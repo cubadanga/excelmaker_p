@@ -222,7 +222,7 @@ price_min = goods_clear['기본가격'].min()
 # * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격
 
 # * 단순히 판매가의 30%올림
-basePrice = price_min*1.3
+basePrice = price_min
 price_correction = basePrice
 price_correction = np.int64(price_correction)
 goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기본가격'].min(),-2)
@@ -252,6 +252,8 @@ goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기
         goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기본가격'].min(),-2)
 '''
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
+basePrice = price_min*1.3
+
 if ship_method == "유료":
     finalPrice = basePrice-rship_price
     finalPrice = np.int64(finalPrice)
@@ -369,28 +371,28 @@ if optionColcnt == 6:
     df_option1 = goods_clear[optionT1].drop_duplicates()
     df_option2 = goods_clear[optionT2].drop_duplicates()
     df_option3 = goods_clear[optionT3].drop_duplicates()
-    list_option1 = str(df_option1.values.tolist())#담겨진 데이터들 중 중복 삭제하고 유일한 값들만 모아서 프레임에 저장
-    list_option2 = str(df_option2.values.tolist())
-    list_option3 = str(df_option3.values.tolist())
+    list_option1 = df_option1.values.tolist()#담겨진 데이터들 중 중복 삭제하고 유일한 값들만 모아서 프레임에 저장
+    list_option2 = df_option2.values.tolist()
+    list_option3 = df_option3.values.tolist()
 
-    optionDesc1 = str(",".join(list_option1))
-    optionDesc2 = str(",".join(list_option2))
-    optionDesc3 = str(",".join(list_option3))
+    optionDesc1 = ",".join(map(str,list_option1))
+    optionDesc2 = ",".join(map(str,list_option2))
+    optionDesc3 = ",".join(map(str,list_option3))
     optionValue = optionDesc1 + '\n' + optionDesc2 + '\n' + optionDesc3
 
 elif optionColcnt == 5:
     df_option1 = goods_clear[optionT1].drop_duplicates()
     df_option2 = goods_clear[optionT2].drop_duplicates()
-    list_option1 = str(df_option1.values.tolist())  # 담겨진 데이터들 중 중복 삭제하고 유일한 값들만 모아서 프레임에 저장
-    list_option2 = str(df_option2.values.tolist())
-    optionDesc1 = str(",".join(list_option1))
-    optionDesc2 = str(",".join(list_option2))
+    list_option1 = df_option1.values.tolist()  # 담겨진 데이터들 중 중복 삭제하고 유일한 값들만 모아서 프레임에 저장
+    list_option2 = df_option2.values.tolist()
+    optionDesc1 = ",".join(map(str,list_option1))
+    optionDesc2 = ",".join(map(str,list_option2))
     optionValue = optionDesc1 + '\n' + optionDesc2
 
 elif optionColcnt == 4:
     df_option1 = goods_clear[optionT1].drop_duplicates()
-    list_option1 = str(df_option1.values.tolist())
-    optionDesc1 = str(",".join(list_option1))
+    list_option1 = df_option1.values.tolist()
+    optionDesc1 = ",".join(map(str,list_option1))
     optionValue = optionDesc1
     optionPrice = deff_price  # optionPrice
     txtOption1 = df_gc[optionT1].drop_duplicates()
