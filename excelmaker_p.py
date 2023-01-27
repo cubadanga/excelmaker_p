@@ -110,9 +110,7 @@ def clean_text(shop_url):
 dfUrl = df.iloc[0,0:1]
 pd_url = dfUrl[0]
 string = clean_text(pd_url)
-# print(string)
 sampl_li = string.split('&')
-# print(sampl_li)
 
 cord_li = []
 
@@ -179,7 +177,9 @@ elif colcount == 1:
 
 df_optiongoods = df.iloc[0:,4:10]
 df_optiongoods.replace('', np.nan, inplace=True)
+
 goods_clear = df_optiongoods.dropna(axis=1).copy()
+
 option_gooddf = goods_clear.columns
 optionColcnt = len(goods_clear.columns)
 
@@ -200,16 +200,16 @@ elif optionColcnt == 5:
 elif optionColcnt == 4:
     optionT1 = option_gooddf[0]
 
-# ### 기본 판매가 계산(옵션별 판매가격 계산)*
-# * 구매원가 = 위안화x타오수수료x환율+실제배송비
+# ### 기본 판매가 계산(옵션별 판매가격 계산)
+# * 구매원가 = (상품가(상품가*수수료*환율)+배송비)
 # * 기본가 = 구매원가*가중치
-# * 마진 = 기본가-스토어수수료-상품가-실제배송비
+# * 마진 = 기본가-스토어수수료-상품가-배송비
 # * 마진율 = 마진금액/기본가
-goods_clear['구매원가'] = goods_clear['위안화']*1.03*int(rate)+goods_clear['실제배송비']
-goods_clear['기본가격'] = goods_clear['구매원가']*fomul
+goods_clear['구매원가'] = round(goods_clear['위안화']*1.03*int(rate)+goods_clear['실제배송비'],-2)
+goods_clear['기본가격'] = round(goods_clear['구매원가']*fomul,-2)
 
 # ==============================================#####
-goods_clear['마진'] = goods_clear['기본가격']-(goods_clear['기본가격']*fee_naver/100)-goods_clear['구매원가']
+goods_clear['마진'] = round(goods_clear['기본가격']-(goods_clear['기본가격']*fee_naver/100)-goods_clear['구매원가'],-2)
 goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본가격']*100,1)
 
 # ### 옵션차액 계산
@@ -217,55 +217,46 @@ goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본가격
 price_max = goods_clear['기본가격'].max()
 price_min = goods_clear['기본가격'].min()
 
-# ### 엑셀에 적힐 기본 판매가격 계산#
+# ### 엑셀에 적힐 기본 판매가격 계산
 # * 옵션별 판매가격이 차이가 없을 경우는 최소 금액이 판매가격이 됨
 # * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격
 
-# * 단순히 판매가의 30%올림
-basePrice = price_min
-price_correction = basePrice
-price_correction = np.int64(price_correction)
-goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기본가격'].min(),-2)
+if price_max-price_min == 0:
+    basePrice = price_min
+else:
+    basePrice = price_min+(price_max-price_min)*2
+basePrice = np.int64(basePrice)
 
-'''
-    if price_max-price_min == 0:
-        basePrice = price_min
-    else:
-        basePrice = price_min+(price_max-price_min)*2
-    basePrice = np.int64(basePrice)
+# * 정해 놓은 마진 이상 남도록 최종판매가 다시 계산
+# * setting시트에서 불러온 최소마진 설정값과 1차 계산 시 도출된 마진의 최소값과 비교한다.
+# * 마진 리스트의 최소값이 < 최소마진(marginMin) 일 때 부족한 만큼 판매가격을 높여준다.
+# * 최종판매가 = 기본판매가격+(최소마진-마진)
+# * 마진 리스트의 최소값이 >= 최소마진 이면 그대로
 
-    # * 정해 놓은 마진 이상 남도록 최종판매가 다시 계산
-    # * setting시트에서 불러온 최소마진 설정값과 1차 계산 시 도출된 마진의 최소값과 비교한다.
-    # * 마진 리스트의 최소값이 < 최소마진(marginMin) 일 때 부족한 만큼 판매가격을 높여준다.
-    # * 최종판매가 = 기본판매가격+(최소마진-마진)
-    # * 마진 리스트의 최소값이 >= 최소마진 이면 그대로
+if marginMin > goods_clear['마진'].min():
+    price_correction = round(basePrice+(marginMin-goods_clear['마진'].min()),-2)
+    price_correction = np.int64(round(price_correction,-2))
+    goods_clear['마진보정옵션가'] = goods_clear['기본가격']+price_correction
+    goods_clear['옵션차액'] = round(goods_clear['마진보정옵션가'] - goods_clear['마진보정옵션가'].min(), -2)
 
-    if marginMin > goods_clear['마진'].min():
-        price_correction = round(basePrice+(marginMin-goods_clear['마진'].min()),-2)
-        price_correction = np.int64(price_correction)
-        goods_clear['마진보정옵션가'] = goods_clear['기본가격']+marginMin-goods_clear['마진'].min()
-        goods_clear['옵션차액'] = round(goods_clear['마진보정옵션가'] - goods_clear['마진보정옵션가'].min(), -2)
+else :
+    price_correction = basePrice
+    price_correction = np.int64(round(price_correction,-2))
+    goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기본가격'].min(),-2)
 
-    else :
-        price_correction = basePrice
-        price_correction = np.int64(price_correction)
-        goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기본가격'].min(),-2)
-'''
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
-basePrice = price_min*1.3
-
 if ship_method == "유료":
-    finalPrice = basePrice-rship_price
-    finalPrice = np.int64(finalPrice)
+    finalPrice = price_correction-rship_price
+    finalPrice = np.int64(round(finalPrice,-2))
 
 else:
-    finalPrice = basePrice
-    finalPrice = np.int64(finalPrice)
+    finalPrice = price_correction
+    finalPrice = np.int64(round(finalPrice,-2))
 
 # ###할인금액 계산
 # * 할인가 = 최종판매가 - 최소값
-discntPrice = round(basePrice-price_min,-2)
-discntPrice = np.int64(discntPrice)
+discntPrice = round(finalPrice-price_min,-2)
+discntPrice = np.int64(round(discntPrice,-2))
 print('가격계산 완료!')
 
 # * 할인율 = 할인가/최종판매가 * 100
@@ -508,6 +499,7 @@ if len(file_names) > 0:
     #destination = "./excel/images/" + productCord + '-' + str(i) + '.jpg'
 
     def folder_file_copy():
+        
         file_dir = os.path.dirname('./mainImages/')
         print(file_dir)
         file_cnt = 1
@@ -517,6 +509,7 @@ if len(file_names) > 0:
                 file_cnt += 1
                 dest_path = './excel/' + file
                 shutil.copy(file_path, dest_path)
+                
     folder_file_copy()
 
 else:
