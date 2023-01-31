@@ -1,4 +1,4 @@
-print('엑셀파일 작성을 시작 합니다. 작성중...')
+print('\033[96m' + '엑셀파일 작성을 시작 합니다. 작성중...' + '\033[0m')
 import pandas as pd
 import openpyxl
 import numpy as np
@@ -50,17 +50,17 @@ def judge(password,passTag):
             properties.write(F)
         
         
-        print("패스워드 OK!")
+        print('\n' + "패스워드 OK!")
         pass
     else:
-        print("저장된 패스워드가 없거나 올바른 패스워드가 아닙니다.")
+        print('\n' + '\033[31m \033[43m' + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다." + '\033[0m')
         inputPass(password,passTag)
 
 def inputPass(password,passTag):
     userpass = password
     passTag = passTag
     userpass = ""
-    print("패스워드를 입력해 주세요.")
+    print('\n' + "패스워드를 입력해 주세요.")
     userPass = input()
     judge(userPass, passTag)
 
@@ -70,7 +70,7 @@ try:
     df = pd.read_excel('./product.xlsx', sheet_name = 'write', header = 0)
     setpd = pd.read_excel('./product.xlsx', sheet_name = 'setting', header = 0)
 except ValueError as e:
-    print('엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.')
+    print('\n' + '\033[31m \033[43m'+ '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+ '\033[0m')
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
@@ -335,7 +335,7 @@ if optionColcnt == 5:
         optionPrice = zero_deff+'\n'+ deff_price
 
     else:
-        print('"옵션 차액 없음"')
+        print('\n' + '옵션의 가격이 모두 동일합니다.')
 
 elif optionColcnt == 4:
     df_option1 = df_gc[optionT1].drop_duplicates()  # 첫번째 필드의 데이터들을 프레임에 담는다.
@@ -438,7 +438,7 @@ elif addDescBool ==1:
     p_desc = descPname + descPages + optionHtml
 
 else:
-    print("상하단 이미지 등록 여부가 잘못 입력 되었습니다.")
+    print('\n' + '\033[31m \033[43m' + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + '\033[0m')
 
 naverDesclist = descNaver.split('\n')
 #shop11Desclist = desc11st.split('\n')
@@ -477,7 +477,7 @@ output_path = './mainImages'
 try:
     file_names = os.listdir(file_path)
 except FileNotFoundError as e:
-    print('mainImage(메인이미지) 폴더가 존재하지 않습니다.')
+    print('\n' + '\033[31m \033[43m' + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.' + '\033[0m')
 
 if len(file_names) > 0:
     i = 1
@@ -501,7 +501,6 @@ if len(file_names) > 0:
     def folder_file_copy():
         
         file_dir = os.path.dirname('./mainImages/')
-        print(file_dir)
         file_cnt = 1
         for path, dirs, files in os.walk(file_dir):
             for file in files:
@@ -513,7 +512,7 @@ if len(file_names) > 0:
     folder_file_copy()
 
 else:
-    print("메인이미지 폴더에 이미지가 없습니다.")
+    print('\n' + '\033[31m \033[43m' + "오류 - 메인이미지 폴더에 이미지가 없습니다." + '\033[0m')
     mainImage = ""
     subImages = ""
 print("메인이미지 수정/이동 완료!")
@@ -736,7 +735,7 @@ def createFolder(directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
     except OSError:
-        print ('오류: Creating directory. ' +  directory)
+        print ('\n' + '\033[31m \033[43m' + '오류 - Creating directory. ' +  directory + '\033[0m')
 
 pathf = ""
 pathf = './excel/'+ productCord
@@ -750,33 +749,46 @@ print('이미지 폴더 생성 완료!')
 # 옵션 이미지 다운로드
 optionNum = 0
 ###
-for i in op_imgurls: 
-    file_ext = i.split('.')[-1] # 확장자 추출
-    path = pathOption + '/' + productCord + '_option_' + str(optionNum)+'.' + file_ext
-    time.sleep(0.1)
-    urllib.request.urlretrieve(i, path)
-    print(str(optionNum)+'번 옵션 이미지 다운로드 성공')
-    optionNum +=1
-    
-# 상세 이미지 다운로드
-descimgNum = 0
-dmod = descPages1.replace('<img src="',"").replace('"/>',",")
-modUrls = dmod.split(',')
-modUrls = modUrls[:-1]
+try:
+    for i in op_imgurls: 
+        file_ext = i.split('.')[-1] # 확장자 추출
+        path = pathOption + '/' + productCord + '_option_' + str(optionNum)+'.' + file_ext
+        time.sleep(0.1)
+        urllib.request.urlretrieve(i, path)
+        print(str(optionNum)+'번 옵션 이미지 다운로드 성공')
+        optionNum +=1
+        
+    # 상세 이미지 다운로드
+    descimgNum = 0
+    dmod = descPages1.replace('<img src="',"").replace('"/>',",")
+    modUrls = dmod.split(',')
+    modUrls = modUrls[:-1]
 
-for i in modUrls: 
-    file_ext = i.split('.')[-1] # 확장자 추출
-    path = pathDesc + '/' + productCord + '_desc_' + str(descimgNum)+'.' + file_ext
-    time.sleep(0.1)
-    urllib.request.urlretrieve(i, path)
-    print(str(descimgNum)+'번 상세 이미지 다운로드 성공')
-    descimgNum +=1
+except urllib.error.HTTPError:
+    print('\n' + '\033[31m \033[43m' + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.' + '\033[0m')
+    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    aInput = input("")
+    pass
+
+
+try:    
+    for i in modUrls: 
+        file_ext = i.split('.')[-1] # 확장자 추출
+        path = pathDesc + '/' + productCord + '_desc_' + str(descimgNum)+'.' + file_ext
+        time.sleep(0.1)
+        urllib.request.urlretrieve(i, path)
+        print(str(descimgNum)+'번 상세 이미지 다운로드 성공')
+        descimgNum +=1
+
+except urllib.error.HTTPError:
+    print('\n' + '\033[31m \033[43m' + '오류 - 타오바오에 크롬 로그인이 필요하거나 올바른 상세 url이 아님'+'\033[0m')
+    pass
 
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
 
-print("아무키나 누르면 종료합니다.")
+print('\n' + '\033[96m' + "완성! 엔터를 누르면 종료합니다." + '\033[0m')
 
 aInput = input("")
 
