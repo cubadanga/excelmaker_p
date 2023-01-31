@@ -244,8 +244,12 @@ basePrice = np.int64(basePrice)
 # * 마진 리스트의 최소값이 >= 최소마진 이면 그대로
 
 if marginMin > goods_clear['마진'].min():
-    price_correction = round((marginMin-goods_clear['마진'].min()*1.15),-2)
+    price_correction = round(((marginMin-goods_clear['마진'].min())*1.15),-2)
     price_correction = np.int64(round(price_correction,-2))
+    print(marginMin)
+    print(goods_clear['마진'].min())
+    print(price_correction)
+    
     goods_clear['마진보정옵션가'] = goods_clear['기본판매가'] + price_correction
     goods_clear['옵션차액'] = round(goods_clear['마진보정옵션가'] - goods_clear['마진보정옵션가'].min(), -2)
 
@@ -255,14 +259,11 @@ else :
     goods_clear['옵션차액'] = round(goods_clear['기본판매가']-goods_clear['기본판매가'].min(),-2)
 
 # 표시 판매가 계산 
-dp_price = round(goods_clear['옵션차액'].min() / (1-discount_rate),-2)
+dp_price = round(goods_clear['마진보정옵션가'].min() / (1-discount_rate/100),-2)
 
 # 할인금액 계산
-discount_price = dp_price - round(goods_clear['옵션차액'].min(),-2)
-discntPrice = np.int64(round(discount_price,-2))
-
-
-
+discount_price = dp_price - round(goods_clear['마진보정옵션가'].min(),-2)
+discount_price = np.int64(discount_price)
 
 
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
@@ -564,7 +565,7 @@ tday_f = time.strftime('%Y-%m-%d',time.localtime(time.time()))
 ws["A2"].value = "신상품"
 ws["B2"].value = categori_num
 ws["C2"].value = pName
-ws["D2"].value = finalPrice
+ws["D2"].value = dp_price
 ws["E2"].value = "999"
 ws["F2"].value = as_info
 ws["G2"].value = as_tel
@@ -596,7 +597,7 @@ ws["AF2"].value = exchange_ship
 ws["AG2"].value = " "
 ws["AH2"].value = " "
 ws["AI2"].value = " "
-ws["AJ2"].value = discntPrice
+ws["AJ2"].value = discount_price
 ws["AK2"].value = "원"
 ws["AL2"].value = " "
 ws["AM2"].value = " "
@@ -639,7 +640,7 @@ ws["BW2"].value = "https://item.taobao.com/item.htm?id="+productCord
 ws["BX2"].value = goods_clear['위안화'].min()
 ws["BY2"].value =rate
 ws["BZ2"].value = goods_clear['실제배송비'].min()
-ws["CA2"].value = round(goods_clear['구매원가'].min(),-2)
+ws["CA2"].value = round(prime_cost,-2)
 ws["CB2"].value = round(goods_clear['마진보정옵션가'].min(),-2)
 ws["CC2"].value = round(goods_clear['보정마진'].min(),1)
 ws["CD2"].value = round(goods_clear['보정마진율'].min(),1)
@@ -700,7 +701,7 @@ p_ws["AF2"].value = exchange_ship
 p_ws["AG2"].value = " "
 p_ws["AH2"].value = " "
 p_ws["AI2"].value = " "
-p_ws["AJ2"].value = discntPrice
+p_ws["AJ2"].value = discount_price
 p_ws["AK2"].value = "원"
 p_ws["AL2"].value = " "
 p_ws["AM2"].value = " "
