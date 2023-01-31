@@ -50,7 +50,7 @@ def judge(password,passTag):
             properties.write(F)
         
         
-        print('\n' + "패스워드 OK!")
+        print('\n' + "이번 달 패스워드 체크 OK! 오늘도 파이팅!"+ '\n')
         pass
     else:
         print('\n' + '\033[31m \033[43m' + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다." + '\033[0m')
@@ -71,6 +71,9 @@ try:
     setpd = pd.read_excel('./product.xlsx', sheet_name = 'setting', header = 0)
 except ValueError as e:
     print('\n' + '\033[31m \033[43m'+ '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+ '\033[0m')
+    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    aInput = input("")
+    pass
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
@@ -81,25 +84,26 @@ as_info = set_list[1]   #as안내 내용
 as_tel = set_list[2]    #A/s전화번호
 factory_desc = set_list[3]  #제조사
 brand_info = set_list[4]    #브랜드
-ship_method = set_list[5]   #배송비유형
-rship_price = set_list[6]   #기본배송비
-check_method = set_list[7]  #배송비 결제방식
-refund_ship = set_list[8]   #반품배송비
-exchange_ship = set_list[9] #교환배송비
-gift_desc = set_list[10] #사은품
-point_tReview = set_list[11]    #텍스트리뷰 작성시 지급 포인트
-point_photoReview = set_list[12]    #포토/동영상 리뷰 작성시 지급 포인트
-point_monthText = set_list[13]  #한달사용 텍스트리뷰 작성시 지급 포인트
-point_monthVideo = set_list[14] #한달사용 포토/동영상리뷰 작성시 지급 포인트
-point_talktalk = set_list[15]   #톡톡친구/스토어찜고객 리뷰 작성시 지급 포인트
-rate = set_list[16] #환율
-fomul = set_list[17]    #가격조정값
-fee_naver = set_list[18]    #네이버수수료
-marginMin = set_list[19]    #최소마진
-naver_top = set_list[20]    #스스 상세페이지에 삽입되는 상단이미지
-naver_bottom = set_list[21] #스스 상세페이지에 삽입되는 하단이미지
-naver_bottom2 = set_list[22] #스스 상세페이지에 삽입되는 하단이미지 2
-addDescBool = set_list[23]  #개인 상세페이지 상,하단 이미지 사용 유무
+discount_rate = set_list[5] #표시 될 할인율
+ship_method = set_list[6]   #배송비유형
+rship_price = set_list[7]   #기본배송비
+check_method = set_list[8]  #배송비 결제방식
+refund_ship = set_list[9]   #반품배송비
+exchange_ship = set_list[10] #교환배송비
+gift_desc = set_list[11] #사은품
+point_tReview = set_list[12]    #텍스트리뷰 작성시 지급 포인트
+point_photoReview = set_list[13]    #포토/동영상 리뷰 작성시 지급 포인트
+point_monthText = set_list[14]  #한달사용 텍스트리뷰 작성시 지급 포인트
+point_monthVideo = set_list[15] #한달사용 포토/동영상리뷰 작성시 지급 포인트
+point_talktalk = set_list[16]   #톡톡친구/스토어찜고객 리뷰 작성시 지급 포인트
+rate = set_list[17] #환율
+fomul = set_list[18]    #가격조정값
+fee_naver = set_list[19]    #네이버수수료
+marginMin = set_list[20]    #최소마진
+naver_top = set_list[21]    #스스 상세페이지에 삽입되는 상단이미지
+naver_bottom = set_list[22] #스스 상세페이지에 삽입되는 하단이미지
+naver_bottom2 = set_list[23] #스스 상세페이지에 삽입되는 하단이미지 2
+addDescBool = set_list[24]  #개인 상세페이지 상,하단 이미지 사용 유무
 
 
 # ### url 필드에서 상품ID 추출
@@ -122,12 +126,12 @@ num = cord_li[0]
 cord_num = re.findall('\d',num)
 productCord = "".join(cord_num)
 taobaoUrl = "https://item.taobao.com/item.htm?id=" + productCord
-print('url 추출완료!: '+ taobaoUrl)
-print('제품코드 추출완료!: '+ productCord)
+print('url 추출 완료!')
+print('제품코드 추출 완료!: '+ productCord)
 # ### 상품명 추출
 dfName = df.iloc[0,1:2]
 pName = str(dfName[0])
-print('제목 추출완료!: ' + pName)
+print('제목 추출 완료!: ' + pName)
 
 # 카테고리 번호 추출
 categori = df['카테고리번호']
@@ -145,8 +149,9 @@ dfVurl = df.iloc[0,11:12]
 videourl = str(dfVurl[0])
 if videourl == 'nan':
     videourl = '동영상이 없습니다.'
+    print('동영상 url은 없었습니다.')
 else:
-    print('동영상 url은: ' + videourl)
+    print('동영상 url 복사완료!')
 
 # ### 옵션명 제작
 # * price 시트의 옵션명이 적혀있는 3개 행의 필드명을 추출하여 ','으로 구분하여 합친다.
@@ -201,31 +206,36 @@ elif optionColcnt == 4:
     optionT1 = option_gooddf[0]
 
 # ### 기본 판매가 계산(옵션별 판매가격 계산)
-# * 구매원가 = (상품가(상품가*수수료*환율)+배송비)
-# * 기본가 = 구매원가*가중치
-# * 마진 = 기본가-스토어수수료-상품가-배송비
+# * 구매원가 = (상품가(상품가*수수료*환율)+배송비) prime_cost
+# * 기본판매가 = 구매원가*가중치 price_min
+# * 마진 = 기본가-스토어수수료-상품가-배송비 
 # * 마진율 = 마진금액/기본가
 goods_clear['구매원가'] = round(goods_clear['위안화']*1.03*int(rate)+goods_clear['실제배송비'],-2)
-goods_clear['기본가격'] = round(goods_clear['구매원가']*fomul,-2)
-
+goods_clear['기본판매가'] = round(goods_clear['구매원가']*fomul,-2)
+prime_cost = goods_clear['구매원가'].min()
 # ==============================================#####
-goods_clear['마진'] = round(goods_clear['기본가격']-(goods_clear['기본가격']*fee_naver/100)-goods_clear['구매원가'],-2)
-goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본가격']*100,1)
+goods_clear['마진'] = round(goods_clear['기본판매가']-(goods_clear['기본판매가']*fee_naver/100)-goods_clear['구매원가'],-2)
+goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본판매가']*100,1)
 
 # ### 옵션차액 계산
 # * 기본판매가의 최소값, 최대값 추출
-price_max = goods_clear['기본가격'].max()
-price_min = goods_clear['기본가격'].min()
+price_max = goods_clear['기본판매가'].max()
+price_min = goods_clear['기본판매가'].min()
 
 # ### 엑셀에 적힐 기본 판매가격 계산
 # * 옵션별 판매가격이 차이가 없을 경우는 최소 금액이 판매가격이 됨
-# * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격
+# * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격이 되도록  
+# 2023-01-31에 올려주지 않는 것으로 수정
 
+basePrice = np.int64(price_min)
+
+'''
 if price_max-price_min == 0:
     basePrice = price_min
 else:
     basePrice = price_min+(price_max-price_min)*2
 basePrice = np.int64(basePrice)
+'''
 
 # * 정해 놓은 마진 이상 남도록 최종판매가 다시 계산
 # * setting시트에서 불러온 최소마진 설정값과 1차 계산 시 도출된 마진의 최소값과 비교한다.
@@ -234,36 +244,41 @@ basePrice = np.int64(basePrice)
 # * 마진 리스트의 최소값이 >= 최소마진 이면 그대로
 
 if marginMin > goods_clear['마진'].min():
-    price_correction = round(basePrice+(marginMin-goods_clear['마진'].min()),-2)
+    price_correction = round((marginMin-goods_clear['마진'].min()*1.15),-2)
     price_correction = np.int64(round(price_correction,-2))
-    goods_clear['마진보정옵션가'] = goods_clear['기본가격']+price_correction
+    goods_clear['마진보정옵션가'] = goods_clear['기본판매가'] + price_correction
     goods_clear['옵션차액'] = round(goods_clear['마진보정옵션가'] - goods_clear['마진보정옵션가'].min(), -2)
 
 else :
     price_correction = basePrice
     price_correction = np.int64(round(price_correction,-2))
-    goods_clear['옵션차액'] = round(goods_clear['기본가격']-goods_clear['기본가격'].min(),-2)
+    goods_clear['옵션차액'] = round(goods_clear['기본판매가']-goods_clear['기본판매가'].min(),-2)
+
+# 표시 판매가 계산 
+dp_price = round(goods_clear['옵션차액'].min() / (1-discount_rate),-2)
+
+# 할인금액 계산
+discount_price = dp_price - round(goods_clear['옵션차액'].min(),-2)
+discntPrice = np.int64(round(discount_price,-2))
+
+
+
+
 
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
 if ship_method == "유료":
-    finalPrice = price_correction-rship_price
+    finalPrice = goods_clear['마진보정옵션가'].min()-rship_price
     finalPrice = np.int64(round(finalPrice,-2))
 
 else:
-    finalPrice = price_correction
+    finalPrice = goods_clear['마진보정옵션가'].min()
     finalPrice = np.int64(round(finalPrice,-2))
 
-# ###할인금액 계산
-# * 할인가 = 최종판매가 - 최소값
-discntPrice = round(finalPrice-price_min,-2)
-discntPrice = np.int64(round(discntPrice,-2))
 print('가격계산 완료!')
 
-# * 할인율 = 할인가/최종판매가 * 100
-discntR = round(discntPrice/finalPrice*100,1)
 goods_clear['보정가격'] = finalPrice
 goods_clear['보정마진'] = round(goods_clear['보정가격']-goods_clear['구매원가']-goods_clear['실제배송비'],-2)
-goods_clear['보정마진율'] = round(goods_clear['보정마진']/goods_clear['보정가격']*100,1)
+goods_clear['보정마진율'] = round(goods_clear['보정마진']/goods_clear['보정가격']*100,0)
 
 # ### 옵션항목 뽑기
 option_list1 = []
@@ -335,7 +350,7 @@ if optionColcnt == 5:
         optionPrice = zero_deff+'\n'+ deff_price
 
     else:
-        print('\n' + '옵션의 가격이 모두 동일합니다.')
+        print('옵션의 가격이 모두 동일합니다.')
 
 elif optionColcnt == 4:
     df_option1 = df_gc[optionT1].drop_duplicates()  # 첫번째 필드의 데이터들을 프레임에 담는다.
@@ -357,6 +372,8 @@ elif optionColcnt == 4:
     optionPrice = deff_price
 
 # 네이버가 요구하는 양식으로 데이터를 편집하여 스트링으로 저장
+
+print('옵션 작성 완료!')
 
 if optionColcnt == 6:
     df_option1 = goods_clear[optionT1].drop_duplicates()
@@ -478,6 +495,9 @@ try:
     file_names = os.listdir(file_path)
 except FileNotFoundError as e:
     print('\n' + '\033[31m \033[43m' + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.' + '\033[0m')
+    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    aInput = input("")
+    pass
 
 if len(file_names) > 0:
     i = 1
@@ -518,13 +538,29 @@ else:
 print("메인이미지 수정/이동 완료!")
 
 #스마트스토어 필드명 불러오기
+
 store_field = pd.read_excel('./product.xlsx', sheet_name = 'store', header = 0)
 storeField_list = list(store_field['네이버'])
 
-#스마트스토어 엑셀파일 생성
+#스마트스토어 본인용 엑셀파일 생성
 wb = openpyxl.Workbook()
 ws = wb.active
 ws.append(storeField_list)
+
+#카테고리 불러오기
+ncategori = pd.read_excel('./product.xlsx', sheet_name = 'categori_naver', header = 0)
+catStr = int(categori_num)
+df_cat = ncategori.loc[ncategori['카테고리코드'] == catStr].fillna("")
+
+strCalevel1 = df_cat['대분류'].to_string(index=False)
+strCalevel2 = df_cat['중분류'].to_string(index=False)
+strCalevel3 = df_cat['소분류'].to_string(index=False)
+strCalevel4 = df_cat['세분류'].to_string(index=False)
+
+tday = time.time()
+tday_s = time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time()))
+tday_f = time.strftime('%Y-%m-%d',time.localtime(time.time()))
+
 ws["A2"].value = "신상품"
 ws["B2"].value = categori_num
 ws["C2"].value = pName
@@ -592,11 +628,30 @@ ws["BL2"].value = "N"
 ws["BM2"].value = " "
 ws["BN2"].value = " "
 ws["BO2"].value = " "
-#ws["BP2"].value = " "
+ws["BP2"].value = " "
+ws["BQ2"].value = " "
+ws["BR2"].value = " "
+ws["BS2"].value = nickName # 작성자
+ws["BT2"].value = tday_f # 소싱일
+ws["BU2"].value = productCord
+ws["BV2"].value = pName
+ws["BW2"].value = "https://item.taobao.com/item.htm?id="+productCord
+ws["BX2"].value = goods_clear['위안화'].min()
+ws["BY2"].value =rate
+ws["BZ2"].value = goods_clear['실제배송비'].min()
+ws["CA2"].value = round(goods_clear['구매원가'].min(),-2)
+ws["CB2"].value = round(goods_clear['마진보정옵션가'].min(),-2)
+ws["CC2"].value = round(goods_clear['보정마진'].min(),1)
+ws["CD2"].value = round(goods_clear['보정마진율'].min(),1)
+ws["CE2"].value = fomul
+ws["CF2"].value = marginMin
+ws["CG2"].value = categori_num
+ws["CH2"].value = strCalevel1
+ws["CI2"].value = strCalevel2
+ws["CJ2"].value = strCalevel3
+ws["Ck2"].value = strCalevel4
 
-tday = time.time()
-tday_s = time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time()))
-tday_f = time.strftime('%Y-%m-%d',time.localtime(time.time()))
+
 new_fileName = ('./excel/'+productCord+'_'+'개인용'+'_'+tday_s+'.xlsx')
 wb.save(new_fileName)
 print("개인용파일 작성완료!")
@@ -683,21 +738,16 @@ new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
 print("배포용파일 작성완료!")
 
-# ###소싱 기록 파일 생성
+
+# ###소싱 기록 파일 생성 2023-01-31 소싱파일 만들지 않음
+'''
 store_sourcing = pd.read_excel('./product.xlsx', sheet_name = 'store', header = 0)
 sourcing_list = list(store_sourcing['소싱기록'])
 s_wb = openpyxl.Workbook()
 s_ws = s_wb.active
 s_ws.append(sourcing_list)
 
-ncategori = pd.read_excel('./product.xlsx', sheet_name = 'categori_naver', header = 0)
-catStr = int(p_ws['B2'].value)
-df_cat = ncategori.loc[ncategori['카테고리코드'] == catStr].fillna("")
 
-strCalevel1 = df_cat['대분류'].to_string(index=False)
-strCalevel2 = df_cat['중분류'].to_string(index=False)
-strCalevel3 = df_cat['소분류'].to_string(index=False)
-strCalevel4 = df_cat['세분류'].to_string(index=False)
 
 s_ws["A2"].value = tday_f # 소싱일
 s_ws["B2"].value = productCord  #상품id
@@ -724,7 +774,7 @@ s_fileName = ('./excel/'+productCord+'_'+'소싱정보'+'_'+tday_s+'.xlsx')
 s_wb.save(s_fileName)
 
 print("소싱파일 작성완료!")
-
+'''
 # 이미지 저장용 폴더 생성
 
 tday = time.time()
@@ -736,6 +786,9 @@ def createFolder(directory):
             os.makedirs(directory)
     except OSError:
         print ('\n' + '\033[31m \033[43m' + '오류 - Creating directory. ' +  directory + '\033[0m')
+        print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+        aInput = input("")
+        pass
 
 pathf = ""
 pathf = './excel/'+ productCord
@@ -744,7 +797,7 @@ pathOption = './excel/'+ productCord +'/Option'
 createFolder(pathf)
 createFolder(pathDesc)
 createFolder(pathOption)
-print('이미지 폴더 생성 완료!')
+print('이미지 폴더 생성 완료!'+'\n')
 
 # 옵션 이미지 다운로드
 optionNum = 0
