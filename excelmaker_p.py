@@ -1,6 +1,8 @@
 print('\033[96m' + '엑셀파일 작성을 시작 합니다. 작성중...' + '\033[0m')
 import pandas as pd
 import openpyxl
+from  openpyxl.styles  import  Alignment
+from  openpyxl.styles.fonts  import  Font
 import numpy as np
 import re
 import os
@@ -10,19 +12,17 @@ from urllib.error import HTTPError
 import urllib.request
 from urllib.request import urlopen
 import configparser
-import logging.config
 from bs4 import BeautifulSoup
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
 # * 엑셀에서 setting 시트 (셋팅시트) 추출
-basedir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(basedir)
+basedir = os.getcwd()
+ini_dir = os.path.join(basedir,'set.ini')
 
 # pc set.ini 파일의 저장된 pass워드 읽어오기
 properties = configparser.ConfigParser()
-properties.read('./set.ini')
-properties
+properties.read(ini_dir)
 password = properties['DEFAULT']['UserPass']
 
 #웹에있는 password 텍스트 추출 함수
@@ -41,7 +41,7 @@ def getPtag(url):
     return ptag.text
 
 #관리자 패스워드가 저장된 웹페이지 url을 전달하여 getPtag 함수 실행
-passTag = getPtag("https://sites.google.com/view/test-exceldoc/%ED%99%88")
+passTag = getPtag("https://sites.google.com/view/test-exceldoc/pass")
 
 def judge(password,passTag):
     if password == passTag:
@@ -581,7 +581,8 @@ ws["P2"].value = " "
 ws["Q2"].value = "과세상품"
 ws["R2"].value = "Y"
 ws["S2"].value = "Y"
-ws["T2"].value = "0200037"
+ws["T2"].number_format = '"0"#'
+ws["T2"].value = "'0200037"
 ws["U2"].value = factory_desc
 ws["V2"].value = "N"
 ws["W2"].value = " "
