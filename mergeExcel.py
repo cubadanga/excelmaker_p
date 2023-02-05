@@ -21,11 +21,8 @@ def publish_excel(jointype):
         for file in os.listdir(data_file_folder):
             if file.endswith('.xlsx') and jointype in file:
                 print('Loading file {0}...'.format(file))
-                df.append(pd.read_excel(os.path.join(data_file_folder,file)))
+                df.append(pd.read_excel(os.path.join(data_file_folder,file),dtype = {'판매자 상품코드':'str','원산지 코드':'str','제품코드':'str'} ))
         df_master = pd.concat(df, axis=0, ignore_index=True)
-       
-        df_master = df_master.astype({'판매자 상품코드':'str','원산지 코드':'str','제품코드':'str'})
-        
         df_master.to_excel('./excel/'+jointype+'_merge_naver_' + tday_s + '.xlsx', index=False)
         return df
     except FileNotFoundError as e:

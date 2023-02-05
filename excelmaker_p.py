@@ -99,12 +99,11 @@ point_talktalk = set_list[16]   #톡톡친구/스토어찜고객 리뷰 작성�
 rate = set_list[17] #환율
 fomul = set_list[18]    #가격조정값
 fee_naver = set_list[19]    #네이버수수료
-marginMin = set_list[20]    #최소마진
+marginMin = int(set_list[20])    #최소마진
 naver_top = set_list[21]    #스스 상세페이지에 삽입되는 상단이미지
 naver_bottom = set_list[22] #스스 상세페이지에 삽입되는 하단이미지
 naver_bottom2 = set_list[23] #스스 상세페이지에 삽입되는 하단이미지 2
 addDescBool = set_list[24]  #개인 상세페이지 상,하단 이미지 사용 유무
-
 
 # ### url 필드에서 상품ID 추출
 def clean_text(shop_url):
@@ -137,7 +136,6 @@ print('제목 추출 완료!: ' + pName)
 categori = df['카테고리번호']
 categori_list = list(categori)
 categori_num = categori_list[0]
-
 
 # 재고수량 추출
 quanty = df['재고수량'].astype(str)
@@ -246,17 +244,13 @@ basePrice = np.int64(basePrice)
 if marginMin > goods_clear['마진'].min():
     price_correction = round(((marginMin-goods_clear['마진'].min())*1.15),-2)
     price_correction = np.int64(round(price_correction,-2))
-    print(marginMin)
-    print(goods_clear['마진'].min())
-    print(price_correction)
-    
-    goods_clear['마진보정옵션가'] = goods_clear['기본판매가'] + price_correction
-    goods_clear['옵션차액'] = round(goods_clear['마진보정옵션가'] - goods_clear['마진보정옵션가'].min(), -2)
 
 else :
-    price_correction = basePrice
+    price_correction = goods_clear['마진'].min()
     price_correction = np.int64(round(price_correction,-2))
-    goods_clear['옵션차액'] = round(goods_clear['기본판매가']-goods_clear['기본판매가'].min(),-2)
+
+goods_clear['마진보정옵션가'] = goods_clear['기본판매가'] + price_correction
+goods_clear['옵션차액'] = round(goods_clear['기본판매가'] - goods_clear['기본판매가'].min(),-2)
 
 # 표시 판매가 계산 
 dp_price = round(goods_clear['마진보정옵션가'].min() / (1-discount_rate/100),-2)
@@ -414,9 +408,9 @@ preDescPages = dpHtml_list[0]
 descPages1 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
 descPages = re.sub("< ", "<", descPages1)+'\n'
 descPname = '<br><br><h1 style="text-align: center;"><strong>' + pName + "</strong></h1><br><br>"+'\n'
-naverTop = '<img src=' + '"' + naver_top + '"/>'+'\n'
-naverBottom = '<img src="'+ naver_bottom + '"/>'+'\n'
-naverBottom2 = '<img src="'+ naver_bottom2 + '"/>'+'\n'
+naverTop = '<img src="' + naver_top + '"/>'+'\n'
+naverBottom = '<img src="' + naver_bottom + '"/>'+'\n'
+naverBottom2 = '<img src="' + naver_bottom2 + '"/>'+'\n'
 #shop11Top = '<img src="' + shop11st_top + '"/>'+'\n'
 #shop11stBottom = '<img src="' + shop11st_bottom + '"/>'+'\n'
 
@@ -464,19 +458,19 @@ pDescNaverList = p_desc.split('\n')
 
 naverlist = []
 for descStr in naverDesclist :
-     naverlist.append("<div>" + descStr + "</div>")
+    naverlist.append("<div>" + descStr + "</div>")
 descNaver = "<div align='center'>" + str("".join(naverlist)) + "</div>"
 
 ''' 11번가 추가 시 작동
 shop11list = []
 for descStr in shop11Desclist :
-     shop11list.append("<div>" + descStr + "</div>")
+    shop11list.append("<div>" + descStr + "</div>")
 desc11st = "<div align='center'>" + str("".join(shop11list)) + "</div>"
 '''
 
 publish_Nlist = []
 for descStr in pDescNaverList :
-     publish_Nlist.append("<div>" + descStr + "</div>")
+    publish_Nlist.append("<div>" + descStr + "</div>")
 descPN = "<div align='center'>" + str("".join(publish_Nlist)) + "</div>"
 
 print("상세페이지 작성 완료!")
@@ -551,7 +545,7 @@ ws.append(storeField_list)
 #카테고리 불러오기
 ncategori = pd.read_excel('./product.xlsx', sheet_name = 'categori_naver', header = 0)
 catStr = int(categori_num)
-df_cat = ncategori.loc[ncategori['카테고리코드'] == catStr].fillna("")
+df_cat = ncategori.loc[ncategori['카테고리번호'] == catStr].fillna("")
 
 strCalevel1 = df_cat['대분류'].to_string(index=False)
 strCalevel2 = df_cat['중분류'].to_string(index=False)
@@ -582,7 +576,11 @@ ws["Q2"].value = "과세상품"
 ws["R2"].value = "Y"
 ws["S2"].value = "Y"
 ws["T2"].number_format = '"0"#'
-ws["T2"].value = "'0200037"
+
+cellFormat = ws["T2"]
+cellFormat.number_format = '@'
+ws["T2"].value = "0200037"
+
 ws["U2"].value = factory_desc
 ws["V2"].value = "N"
 ws["W2"].value = " "
@@ -685,6 +683,10 @@ p_ws["P2"].value = " "
 p_ws["Q2"].value = "과세상품"
 p_ws["R2"].value = "Y"
 p_ws["S2"].value = "Y"
+
+cellFormat = p_ws["T2"]
+cellFormat.number_format = '@'
+
 p_ws["T2"].value = "0200037"
 p_ws["U2"].value = "factory_desc"
 p_ws["V2"].value = "N"
