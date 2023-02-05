@@ -69,6 +69,8 @@ judge(password,passTag)
 try:
     df = pd.read_excel('./product.xlsx', sheet_name = 'write', header = 0)
     setpd = pd.read_excel('./product.xlsx', sheet_name = 'setting', header = 0)
+    setpd = setpd.fillna('')
+    
 except ValueError as e:
     print('\n' + '\033[31m \033[43m'+ '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+ '\033[0m')
     print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
