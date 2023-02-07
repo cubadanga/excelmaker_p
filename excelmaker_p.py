@@ -4,6 +4,7 @@ import openpyxl
 from  openpyxl.styles  import  Alignment
 from  openpyxl.styles.fonts  import  Font
 import numpy as np
+import random
 import re
 import os
 import shutil
@@ -463,13 +464,6 @@ for descStr in naverDesclist :
     naverlist.append("<div>" + descStr + "</div>")
 descNaver = "<div align='center'>" + str("".join(naverlist)) + "</div>"
 
-''' 11번가 추가 시 작동
-shop11list = []
-for descStr in shop11Desclist :
-    shop11list.append("<div>" + descStr + "</div>")
-desc11st = "<div align='center'>" + str("".join(shop11list)) + "</div>"
-'''
-
 publish_Nlist = []
 for descStr in pDescNaverList :
     publish_Nlist.append("<div>" + descStr + "</div>")
@@ -765,42 +759,6 @@ p_wb.save(new_fileName)
 print("배포용파일 작성완료!")
 
 
-# ###소싱 기록 파일 생성 2023-01-31 소싱파일 만들지 않음
-'''
-store_sourcing = pd.read_excel('./product.xlsx', sheet_name = 'store', header = 0)
-sourcing_list = list(store_sourcing['소싱기록'])
-s_wb = openpyxl.Workbook()
-s_ws = s_wb.active
-s_ws.append(sourcing_list)
-
-
-
-s_ws["A2"].value = tday_f # 소싱일
-s_ws["B2"].value = productCord  #상품id
-s_ws["C2"].value = pName
-s_ws["D2"].value = "https://item.taobao.com/item.htm?id="+productCord
-s_ws["E2"].value = goods_clear['위안화'][0]
-s_ws["F2"].value = goods_clear['실제배송비'][0]
-s_ws["G2"].value = rate
-s_ws["H2"].value = fomul
-s_ws["I2"].value = marginMin
-s_ws["J2"].value = goods_clear['보정마진'][0]
-s_ws["K2"].value = goods_clear['보정마진율'][0]
-s_ws["L2"].value = fee_naver
-s_ws["M2"].value = ship_method
-s_ws["N2"].value = categori_num
-s_ws["O2"].value = strCalevel1
-s_ws["P2"].value = strCalevel2
-s_ws["Q2"].value = strCalevel3
-s_ws["R2"].value = strCalevel4
-s_ws["S2"].value = " "
-s_ws["T2"].value = nickName
-
-s_fileName = ('./excel/'+productCord+'_'+'소싱정보'+'_'+tday_s+'.xlsx')
-s_wb.save(s_fileName)
-
-print("소싱파일 작성완료!")
-'''
 # 이미지 저장용 폴더 생성
 
 tday = time.time()
@@ -832,14 +790,20 @@ try:
     for i in op_imgurls: 
         file_ext = i.split('.')[-1] # 확장자 추출
         path = pathOption + '/' + productCord + '_option_' + str(optionNum)+'.' + file_ext
-        time.sleep(0.1)
+        random_number = round(random.uniform(0.07, 0.3), 2)
+        
+        time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
         print(str(optionNum)+'번 옵션 이미지 다운로드 성공')
         optionNum +=1
         
     # 상세 이미지 다운로드
     descimgNum = 0
-    dmod = descPages1.replace('<img src="',"").replace('"/>',",")
+    dmod = descPages1.replace('<img src="',"")
+    dmod = dmod.replace('"/>',',')
+    dmod = dmod.replace('?getAvatar=avatar','')
+    
+    #dmod = descPages1.replaace('?getAvatar=avatar',"")
     modUrls = dmod.split(',')
     modUrls = modUrls[:-1]
 
@@ -854,7 +818,9 @@ try:
     for i in modUrls: 
         file_ext = i.split('.')[-1] # 확장자 추출
         path = pathDesc + '/' + productCord + '_desc_' + str(descimgNum)+'.' + file_ext
-        time.sleep(0.1)
+        random_number = round(random.uniform(0.02, 0.2), 2)
+        
+        time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
         print(str(descimgNum)+'번 상세 이미지 다운로드 성공')
         descimgNum +=1
