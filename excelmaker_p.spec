@@ -28,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='excelmaker_v0.9',
+    name='excelmaker_v0.9.2',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

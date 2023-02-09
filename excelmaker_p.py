@@ -7,6 +7,7 @@ import numpy as np
 import random
 import re
 import os
+from sys import exit
 import shutil
 import time
 from urllib.error import HTTPError
@@ -76,7 +77,7 @@ except ValueError as e:
     print('\n' + '\033[31m \033[43m'+ '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+ '\033[0m')
     print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
     aInput = input("")
-    pass
+    Exit()
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
@@ -89,24 +90,25 @@ factory_desc = set_list[3]  #제조사
 brand_info = set_list[4]    #브랜드
 discount_rate = set_list[5] #표시 될 할인율
 ship_method = set_list[6]   #배송비유형
-rship_price = set_list[7]   #기본배송비
-check_method = set_list[8]  #배송비 결제방식
-refund_ship = set_list[9]   #반품배송비
-exchange_ship = set_list[10] #교환배송비
-gift_desc = set_list[11] #사은품
-point_tReview = set_list[12]    #텍스트리뷰 작성시 지급 포인트
-point_photoReview = set_list[13]    #포토/동영상 리뷰 작성시 지급 포인트
-point_monthText = set_list[14]  #한달사용 텍스트리뷰 작성시 지급 포인트
-point_monthVideo = set_list[15] #한달사용 포토/동영상리뷰 작성시 지급 포인트
-point_talktalk = set_list[16]   #톡톡친구/스토어찜고객 리뷰 작성시 지급 포인트
-rate = set_list[17] #환율
-fomul = set_list[18]    #가격조정값
-fee_naver = set_list[19]    #네이버수수료
-marginMin = int(set_list[20])    #최소마진
-naver_top = set_list[21]    #스스 상세페이지에 삽입되는 상단이미지
-naver_bottom = set_list[22] #스스 상세페이지에 삽입되는 하단이미지
-naver_bottom2 = set_list[23] #스스 상세페이지에 삽입되는 하단이미지 2
-addDescBool = set_list[24]  #개인 상세페이지 상,하단 이미지 사용 유무
+qt_charge = set_list[7]     #수량별부과-수량
+rship_price = set_list[8]   #기본배송비
+check_method = set_list[9]  #배송비 결제방식
+refund_ship = set_list[10]   #반품배송비
+exchange_ship = set_list[11] #교환배송비
+gift_desc = set_list[12] #사은품
+point_tReview = set_list[13]    #텍스트리뷰 작성시 지급 포인트
+point_photoReview = set_list[14]    #포토/동영상 리뷰 작성시 지급 포인트
+point_monthText = set_list[15]  #한달사용 텍스트리뷰 작성시 지급 포인트
+point_monthVideo = set_list[16] #한달사용 포토/동영상리뷰 작성시 지급 포인트
+point_talktalk = set_list[17]   #톡톡친구/스토어찜고객 리뷰 작성시 지급 포인트
+rate = set_list[18] #환율
+fomul = set_list[19]    #가격조정값
+fee_naver = set_list[20]    #네이버수수료
+marginMin = int(set_list[21])    #최소마진
+naver_top = set_list[22]    #스스 상세페이지에 삽입되는 상단이미지
+naver_bottom = set_list[23] #스스 상세페이지에 삽입되는 하단이미지
+naver_bottom2 = set_list[24] #스스 상세페이지에 삽입되는 하단이미지 2
+addDescBool = set_list[25]  #개인 상세페이지 상,하단 이미지 사용 유무
 
 # ### url 필드에서 상품ID 추출
 def clean_text(shop_url):
@@ -214,22 +216,24 @@ elif optionColcnt == 4:
 goods_clear['구매원가'] = round(goods_clear['위안화']*1.03*int(rate)+goods_clear['실제배송비'],-2)
 goods_clear['기본판매가'] = round(goods_clear['구매원가']*fomul,-2)
 prime_cost = goods_clear['구매원가'].min()
+
 # ==============================================#####
 goods_clear['마진'] = round(goods_clear['기본판매가']-(goods_clear['기본판매가']*fee_naver/100)-goods_clear['구매원가'],-2)
 goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본판매가']*100,1)
+
 
 # ### 옵션차액 계산
 # * 기본판매가의 최소값, 최대값 추출
 price_max = goods_clear['기본판매가'].max()
 price_min = goods_clear['기본판매가'].min()
 
+
 # ### 엑셀에 적힐 기본 판매가격 계산
 # * 옵션별 판매가격이 차이가 없을 경우는 최소 금액이 판매가격이 됨
-# * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격이 되도록  
-# 2023-01-31에 올려주지 않는 것으로 수정
-
 basePrice = np.int64(price_min)
 
+# * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격이 되도록  
+# 2023-01-31에 올려주지 않는 것으로 수정
 '''
 if price_max-price_min == 0:
     basePrice = price_min
@@ -241,42 +245,45 @@ basePrice = np.int64(basePrice)
 # * 정해 놓은 마진 이상 남도록 최종판매가 다시 계산
 # * setting시트에서 불러온 최소마진 설정값과 1차 계산 시 도출된 마진의 최소값과 비교한다.
 # * 마진 리스트의 최소값이 < 최소마진(marginMin) 일 때 부족한 만큼 판매가격을 높여준다.
-# * 최종판매가 = 기본판매가격+(최소마진-마진)
-# * 마진 리스트의 최소값이 >= 최소마진 이면 그대로
 
 if marginMin > goods_clear['마진'].min():
     price_correction = round(((marginMin-goods_clear['마진'].min())*1.15),-2)
     price_correction = np.int64(round(price_correction,-2))
 
 else :
-    price_correction = goods_clear['마진'].min()
+    price_correction = 0
     price_correction = np.int64(round(price_correction,-2))
+    
 
-goods_clear['마진보정옵션가'] = goods_clear['기본판매가'] + price_correction
-goods_clear['옵션차액'] = round(goods_clear['기본판매가'] - goods_clear['기본판매가'].min(),-2)
 
-# 표시 판매가 계산 
-dp_price = round(goods_clear['마진보정옵션가'].min() / (1-discount_rate/100),-2)
+# * 최종판매가 = 기본판매가격+마진보정금액
+tune_marginPrice = basePrice + price_correction
 
-# 할인금액 계산
-discount_price = dp_price - round(goods_clear['마진보정옵션가'].min(),-2)
+# 표시 판매가 계산
+dp_price = round(tune_marginPrice / (1-discount_rate/100),-2)
+
+
+goods_clear['옵션차액'] = round(goods_clear['기본판매가'] - price_min,-2)
+
+#할인금액 계산
+discount_price = dp_price - round(tune_marginPrice,-2)
 discount_price = np.int64(discount_price)
 
 
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
 if ship_method == "유료":
-    finalPrice = goods_clear['마진보정옵션가'].min()-rship_price
+    finalPrice = dp_price-rship_price
     finalPrice = np.int64(round(finalPrice,-2))
 
 else:
-    finalPrice = goods_clear['마진보정옵션가'].min()
+    finalPrice = dp_price
     finalPrice = np.int64(round(finalPrice,-2))
 
 print('가격계산 완료!')
 
-goods_clear['보정가격'] = finalPrice
-goods_clear['보정마진'] = round(goods_clear['보정가격']-goods_clear['구매원가']-goods_clear['실제배송비'],-2)
-goods_clear['보정마진율'] = round(goods_clear['보정마진']/goods_clear['보정가격']*100,0)
+tuneMargin = round(tune_marginPrice-goods_clear['구매원가'].min()-goods_clear['실제배송비'].min(),-2)
+tuneMarginRate = round(tuneMargin/tune_marginPrice*100,0)
+
 
 # ### 옵션항목 뽑기
 option_list1 = []
@@ -405,11 +412,20 @@ elif optionColcnt == 4:
     df_OpDescTitle = txtOption1
 
 #상세페이지 작성
-dpHtml = df['상세페이지']
-dpHtml_list = list(dpHtml)
-preDescPages = dpHtml_list[0]
-descPages1 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
-descPages = re.sub("< ", "<", descPages1)+'\n'
+try:
+    dpHtml = df['상세페이지']
+    dpHtml_list = list(dpHtml)
+    preDescPages = dpHtml_list[0]
+    descPages1 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
+    descPages = re.sub("< ", "<", descPages1)+'\n'
+
+except TypeError:
+    print('\n' + '\033[31m \033[43m' + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다. '+ '\033[0m')
+    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    aInput = input("")
+    exit()
+    
+
 descPname = '<br><br><h1 style="text-align: center;"><strong>' + pName + "</strong></h1><br><br>"+'\n'
 naverTop = '<img src="' + naver_top + '"/>'+'\n'
 naverBottom = '<img src="' + naver_bottom + '"/>'+'\n'
@@ -484,11 +500,12 @@ file_path = './mainImages'
 output_path = './mainImages'
 try:
     file_names = os.listdir(file_path)
+
 except FileNotFoundError as e:
     print('\n' + '\033[31m \033[43m' + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.' + '\033[0m')
     print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
     aInput = input("")
-    pass
+    exit()
 
 if len(file_names) > 0:
     i = 1
@@ -586,7 +603,7 @@ ws["Z2"].value = ship_method
 ws["AA2"].value = rship_price
 ws["AB2"].value = check_method
 ws["AC2"].value = " "
-#ws["AD2"].value = " "
+ws["AD2"].value = qt_charge
 ws["AE2"].value = refund_ship
 ws["AF2"].value = exchange_ship
 ws["AG2"].value = " "
@@ -627,25 +644,30 @@ ws["BO2"].value = " "
 ws["BP2"].value = " "
 ws["BQ2"].value = " "
 ws["BR2"].value = " "
-ws["BS2"].value = nickName # 작성자
-ws["BT2"].value = tday_f # 소싱일
-ws["BU2"].value = productCord
-ws["BV2"].value = pName
-ws["BW2"].value = "https://item.taobao.com/item.htm?id="+productCord
-ws["BX2"].value = goods_clear['위안화'].min()
-ws["BY2"].value =rate
-ws["BZ2"].value = goods_clear['실제배송비'].min()
-ws["CA2"].value = round(prime_cost,-2)
-ws["CB2"].value = round(goods_clear['마진보정옵션가'].min(),-2)
-ws["CC2"].value = round(goods_clear['보정마진'].min(),1)
-ws["CD2"].value = round(goods_clear['보정마진율'].min(),1)
-ws["CE2"].value = fomul
-ws["CF2"].value = marginMin
-ws["CG2"].value = categori_num
-ws["CH2"].value = strCalevel1
-ws["CI2"].value = strCalevel2
-ws["CJ2"].value = strCalevel3
-ws["Ck2"].value = strCalevel4
+ws["BS2"].value = " "
+ws["BT2"].value = " "
+ws["BU2"].value = " "
+ws["BV2"].value = nickName # 작성자
+ws["BW2"].value = tday_f # 소싱일
+ws["BX2"].value = productCord
+ws["BY2"].value = pName
+ws["BZ2"].value = "https://item.taobao.com/item.htm?id="+productCord
+ws["CA2"].value = goods_clear['위안화'].min()
+ws["CB2"].value =rate
+ws["CC2"].value = goods_clear['실제배송비'].min()
+ws["CD2"].value = round(prime_cost,-2)
+ws["CE2"].value = round(tune_marginPrice,-2)
+ws["CF2"].value = round(tuneMargin,1)
+ws["CG2"].value = round(tuneMarginRate,1)
+ws["CH2"].value = fomul
+ws["CI2"].value = marginMin
+ws["CJ2"].value = categori_num
+ws["Ck2"].value = strCalevel1
+ws["CL2"].value = strCalevel2
+ws["CM2"].value = strCalevel3
+ws["CN2"].value = strCalevel4
+
+
 
 
 new_fileName = ('./excel/'+productCord+'_'+'개인용'+'_'+tday_s+'.xlsx')
@@ -693,7 +715,7 @@ p_ws["Z2"].value = ship_method
 p_ws["AA2"].value = rship_price
 p_ws["AB2"].value = check_method
 p_ws["AC2"].value = " "
-#p_ws["AD2"].value = " "
+p_ws["AD2"].value = qt_charge
 p_ws["AE2"].value = refund_ship
 p_ws["AF2"].value = exchange_ship
 p_ws["AG2"].value = " "
@@ -712,7 +734,7 @@ p_ws["AS2"].value = point_photoReview
 p_ws["AT2"].value = point_monthText
 p_ws["AU2"].value = point_monthVideo
 p_ws["AV2"].value = point_talktalk
-#p_ws["AW2"].value = " "
+p_ws["AW2"].value = " "
 p_ws["AX2"].value = gift_desc
 p_ws["AY2"].value = "조합형"
 p_ws["AZ2"].value = optionTitle
@@ -734,25 +756,29 @@ p_ws["BO2"].value = " "
 p_ws["BP2"].value = " "
 p_ws["BQ2"].value = " "
 p_ws["BR2"].value = " "
-p_ws["BS2"].value = nickName # 작성자
-p_ws["BT2"].value = tday_f # 소싱일
-p_ws["BU2"].value = productCord
-p_ws["BV2"].value = pName
-p_ws["BW2"].value = "https://item.taobao.com/item.htm?id="+productCord
-p_ws["BX2"].value = goods_clear['위안화'].min()
-p_ws["BY2"].value =rate
-p_ws["BZ2"].value = goods_clear['실제배송비'].min()
-p_ws["CA2"].value = round(prime_cost,-2)
-p_ws["CB2"].value = round(goods_clear['마진보정옵션가'].min(),-2)
-p_ws["CC2"].value = round(goods_clear['보정마진'].min(),1)
-p_ws["CD2"].value = round(goods_clear['보정마진율'].min(),1)
-p_ws["CE2"].value = fomul
-p_ws["CF2"].value = marginMin
-p_ws["CG2"].value = categori_num
-p_ws["CH2"].value = strCalevel1
-p_ws["CI2"].value = strCalevel2
-p_ws["CJ2"].value = strCalevel3
-p_ws["Ck2"].value = strCalevel4
+p_ws["BS2"].value = " "
+p_ws["BT2"].value = " "
+p_ws["BU2"].value = " "
+p_ws["BV2"].value = nickName # 작성자
+p_ws["BW2"].value = tday_f # 소싱일
+p_ws["BX2"].value = productCord
+p_ws["BY2"].value = pName
+p_ws["BZ2"].value = "https://item.taobao.com/item.htm?id="+productCord
+p_ws["CA2"].value = goods_clear['위안화'].min()
+p_ws["CB2"].value =rate
+p_ws["CC2"].value = goods_clear['실제배송비'].min()
+p_ws["CD2"].value = round(prime_cost,-2)
+p_ws["CE2"].value = round(tune_marginPrice,-2)
+p_ws["CF2"].value = round(tuneMargin,1)
+p_ws["CG2"].value = round(tuneMarginRate,1)
+p_ws["CH2"].value = fomul
+p_ws["CI2"].value = marginMin
+p_ws["CJ2"].value = categori_num
+p_ws["Ck2"].value = strCalevel1
+p_ws["CL2"].value = strCalevel2
+p_ws["CM2"].value = strCalevel3
+p_ws["CN2"].value = strCalevel4
+
 
 new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
@@ -772,7 +798,7 @@ def createFolder(directory):
         print ('\n' + '\033[31m \033[43m' + '오류 - Creating directory. ' +  directory + '\033[0m')
         print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
         aInput = input("")
-        pass
+        exit()
 
 pathf = ""
 pathf = './excel/'+ productCord
@@ -799,11 +825,10 @@ try:
         
     # 상세 이미지 다운로드
     descimgNum = 0
-    dmod = descPages1.replace('<img src="',"")
+    dmod = descPages.replace('<img src="',"")
     dmod = dmod.replace('"/>',',')
     dmod = dmod.replace('?getAvatar=avatar','')
     
-    #dmod = descPages1.replaace('?getAvatar=avatar',"")
     modUrls = dmod.split(',')
     modUrls = modUrls[:-1]
 
@@ -811,7 +836,7 @@ except urllib.error.HTTPError:
     print('\n' + '\033[31m \033[43m' + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.' + '\033[0m')
     print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
     aInput = input("")
-    pass
+    exit()
 
 
 try:    
@@ -826,8 +851,8 @@ try:
         descimgNum +=1
 
 except urllib.error.HTTPError:
-    print('\n' + '\033[31m \033[43m' + '오류 - 타오바오에 크롬 로그인이 필요하거나 올바른 상세 url이 아님'+'\033[0m')
-    pass
+    print('\n' + '\033[31m \033[43m' + '오류 - 타오바오에 크롬 로그인이 필요하거나 올바른 상세 url이 아닙니다.'+'\033[0m')
+    exit()
 
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
@@ -836,7 +861,7 @@ fVideoUrl.close()
 print('\n' + '\033[96m' + "완성! 엔터를 누르면 종료합니다." + '\033[0m')
 
 aInput = input("")
-
+exit()
 
 
 
