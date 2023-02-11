@@ -479,11 +479,15 @@ naverlist = []
 for descStr in naverDesclist :
     naverlist.append("<div>" + descStr + "</div>")
 descNaver = "<div align='center'>" + str("".join(naverlist)) + "</div>"
+descNaver = descNaver.replace('<img src=""/>', '')
 
 publish_Nlist = []
 for descStr in pDescNaverList :
     publish_Nlist.append("<div>" + descStr + "</div>")
 descPN = "<div align='center'>" + str("".join(publish_Nlist)) + "</div>"
+descPN = descPN.replace('<img src=""/>', '')
+
+
 
 print("상세페이지 작성 완료!")
 # ### 엑셀에 기재될 배송비
@@ -667,13 +671,9 @@ ws["CL2"].value = strCalevel2
 ws["CM2"].value = strCalevel3
 ws["CN2"].value = strCalevel4
 
-
-
-
 new_fileName = ('./excel/'+productCord+'_'+'개인용'+'_'+tday_s+'.xlsx')
 wb.save(new_fileName)
 print("개인용파일 작성완료!")
-
 
 store_field2 = pd.read_excel('./product.xlsx', sheet_name = 'store', header = 0)
 storeField_list2 = list(store_field2['네이버'])
@@ -825,12 +825,8 @@ try:
         
     # 상세 이미지 다운로드
     descimgNum = 0
-    dmod = descPages.replace('<img src="',"")
-    dmod = dmod.replace('"/>',',')
-    dmod = dmod.replace('?getAvatar=avatar','')
-    
-    modUrls = dmod.split(',')
-    modUrls = modUrls[:-1]
+    descPages = descPages.replace('?getAvatar=avatar','')
+    modUrls = re.findall('<img.*?src="(.*?)".*?>', descPages)
 
 except urllib.error.HTTPError:
     print('\n' + '\033[31m \033[43m' + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.' + '\033[0m')
@@ -859,7 +855,6 @@ fVideoUrl.write(videourl)
 fVideoUrl.close()
 
 print('\n' + '\033[96m' + "완성! 엔터를 누르면 종료합니다." + '\033[0m')
-
 aInput = input("")
 exit()
 
