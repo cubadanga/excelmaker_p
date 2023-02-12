@@ -88,7 +88,7 @@ as_info = set_list[1]   #as안내 내용
 as_tel = set_list[2]    #A/s전화번호
 factory_desc = set_list[3]  #제조사
 brand_info = set_list[4]    #브랜드
-discount_rate = set_list[5] #표시 될 할인율
+discount_rate = float(set_list[5]) #표시 될 할인율
 ship_method = set_list[6]   #배송비유형
 qt_charge = set_list[7]     #수량별부과-수량
 rship_price = set_list[8]   #기본배송비
@@ -101,14 +101,16 @@ point_photoReview = set_list[14]    #포토/동영상 리뷰 작성시 지급 �
 point_monthText = set_list[15]  #한달사용 텍스트리뷰 작성시 지급 포인트
 point_monthVideo = set_list[16] #한달사용 포토/동영상리뷰 작성시 지급 포인트
 point_talktalk = set_list[17]   #톡톡친구/스토어찜고객 리뷰 작성시 지급 포인트
-rate = set_list[18] #환율
-fomul = set_list[19]    #가격조정값
-fee_naver = set_list[20]    #네이버수수료
+rate = float(set_list[18]) #환율
+fomul = float(set_list[19])    #가격조정값
+fee_naver = float(set_list[20])    #네이버수수료
 marginMin = int(set_list[21])    #최소마진
 naver_top = set_list[22]    #스스 상세페이지에 삽입되는 상단이미지
 naver_bottom = set_list[23] #스스 상세페이지에 삽입되는 하단이미지
 naver_bottom2 = set_list[24] #스스 상세페이지에 삽입되는 하단이미지 2
 addDescBool = set_list[25]  #개인 상세페이지 상,하단 이미지 사용 유무
+
+#계산이 필요한 금액은 숫자형으로 변경
 
 # ### url 필드에서 상품ID 추출
 def clean_text(shop_url):
@@ -857,6 +859,7 @@ fVideoUrl.close()
 print('\n' + '\033[96m' + "완성! 엔터를 누르면 종료합니다." + '\033[0m')
 aInput = input("")
 exit()
+
 
 
 
