@@ -1,4 +1,3 @@
-print('\033[96m' + '엑셀파일 작성을 시작 합니다. 작성중...' + '\033[0m')
 import pandas as pd
 import openpyxl
 from  openpyxl.styles  import  Alignment
@@ -15,6 +14,9 @@ import urllib.request
 from urllib.request import urlopen
 import configparser
 from bs4 import BeautifulSoup
+from termcolor import colored, cprint
+
+print(colored('엑셀파일 작성을 시작 합니다. 작성중...','blue'))
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
@@ -55,7 +57,7 @@ def judge(password,passTag):
         print('\n' + "이번 달 패스워드 체크 OK! 오늘도 파이팅!"+ '\n')
         pass
     else:
-        print('\n' + '\033[31m \033[43m' + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다." + '\033[0m')
+        print(colored('\n' + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다.",red))
         inputPass(password,passTag)
 
 def inputPass(password,passTag):
@@ -465,17 +467,25 @@ if addDescBool == 0:
     descNaver = naverTop + descPname + descPages + optionHtml + naverBottom + naverBottom2
     #desc11st = shop11Top + descPname + descPages + optionHtml + shop11stBottom
     p_desc = descPname + descPages + optionHtml
+    descNaver = descNaver.replace('<img src=""/>', '')
+    descPN = "<div align='center'>" + descNaver + "</div>"
+
 elif addDescBool ==1:
     descNaver = descPname + descPages + optionHtml
     #desc11st = descPname + descPages + optionHtml
     p_desc = descPname + descPages + optionHtml
+    descNaver = descNaver.replace('<img src=""/>', '')
+    descPN = "<div align='center'>" + descNaver + "</div>"
 
 else:
     print('\n' + '\033[31m \033[43m' + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + '\033[0m')
 
+
+'''
 naverDesclist = descNaver.split('\n')
 #shop11Desclist = desc11st.split('\n')
 pDescNaverList = p_desc.split('\n')
+
 
 naverlist = []
 for descStr in naverDesclist :
@@ -489,7 +499,7 @@ for descStr in pDescNaverList :
 descPN = "<div align='center'>" + str("".join(publish_Nlist)) + "</div>"
 descPN = descPN.replace('<img src=""/>', '')
 
-
+'''
 
 print("상세페이지 작성 완료!")
 # ### 엑셀에 기재될 배송비
