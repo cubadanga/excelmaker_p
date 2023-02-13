@@ -14,9 +14,12 @@ import urllib.request
 from urllib.request import urlopen
 import configparser
 from bs4 import BeautifulSoup
-from termcolor import colored, cprint
+from colorama import init, Fore
 
-print(colored('엑셀파일 작성을 시작 합니다. 작성중...','blue'))
+init()
+
+print(Fore.BLUE + "엑셀파일 작성을 시작 합니다. 작성중..." )
+print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
@@ -52,12 +55,11 @@ def judge(password,passTag):
         properties.set('DEFAULT','UserPass',password)
         with open('./set.ini','w',encoding='utf-8') as F:
             properties.write(F)
-        
-        
-        print('\n' + "이번 달 패스워드 체크 OK! 오늘도 파이팅!"+ '\n')
+                
+        print("이번 달 패스워드 체크 OK! 오늘도 파이팅!")
         pass
     else:
-        print(colored('\n' + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다.",red))
+        print(Fore.RED + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다. 패스워드는 단체방 금월 암호 공지를 확인하세요."+Fore.RESET+'\n')
         inputPass(password,passTag)
 
 def inputPass(password,passTag):
@@ -76,8 +78,8 @@ try:
     setpd = setpd.fillna('')
     
 except ValueError as e:
-    print('\n' + '\033[31m \033[43m'+ '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+ '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     Exit()
 
@@ -424,8 +426,8 @@ try:
     descPages = re.sub("< ", "<", descPages1)+'\n'
 
 except TypeError:
-    print('\n' + '\033[31m \033[43m' + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다. '+ '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     exit()
     
@@ -478,7 +480,7 @@ elif addDescBool ==1:
     descPN = "<div align='center'>" + descNaver + "</div>"
 
 else:
-    print('\n' + '\033[31m \033[43m' + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + '\033[0m')
+    print(Fore.RED + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + Fore.RESET+'\n')
 
 
 '''
@@ -518,8 +520,8 @@ try:
     file_names = os.listdir(file_path)
 
 except FileNotFoundError as e:
-    print('\n' + '\033[31m \033[43m' + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.' + '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     exit()
 
@@ -556,10 +558,10 @@ if len(file_names) > 0:
     folder_file_copy()
 
 else:
-    print('\n' + '\033[31m \033[43m' + "오류 - 메인이미지 폴더에 이미지가 없습니다." + '\033[0m')
+    print(Fore.RED + "오류 - 메인이미지 폴더에 이미지가 없습니다.")
     mainImage = ""
     subImages = ""
-print("메인이미지 수정/이동 완료!")
+print(Fore.RESET + "메인이미지 수정/이동 완료!")
 
 #스마트스토어 필드명 불러오기
 
@@ -807,8 +809,8 @@ def createFolder(directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
     except OSError:
-        print ('\n' + '\033[31m \033[43m' + '오류 - Creating directory. ' +  directory + '\033[0m')
-        print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+        print (Fore.RED + '오류 - Creating directory. ' +  directory)
+        print(Fore.RESET + "엔터를 누르면 종료합니다.")
         aInput = input("")
         exit()
 
@@ -841,8 +843,8 @@ try:
     modUrls = re.findall('<img.*?src="(.*?)".*?>', descPages)
 
 except urllib.error.HTTPError:
-    print('\n' + '\033[31m \033[43m' + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.' + '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     exit()
 
@@ -859,14 +861,15 @@ try:
         descimgNum +=1
 
 except urllib.error.HTTPError:
-    print('\n' + '\033[31m \033[43m' + '오류 - 타오바오에 크롬 로그인이 필요하거나 올바른 상세 url이 아닙니다.'+'\033[0m')
-    exit()
+    print(Fore.RED + '오류 - 타오바오에 크롬 로그인이 필요하거나 올바른 상세 url이 아닙니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
 
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
 
-print('\n' + '\033[96m' + "완성! 엔터를 누르면 종료합니다." + '\033[0m')
+print('\n'+ Fore.BLUE + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
 exit()
 
