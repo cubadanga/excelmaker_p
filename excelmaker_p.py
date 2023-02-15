@@ -12,13 +12,14 @@ import time
 from urllib.error import HTTPError
 import urllib.request
 from urllib.request import urlopen
+from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
 from colorama import init, Fore
 
 init()
 
-print(Fore.BLUE + "엑셀파일 작성을 시작 합니다. 작성중..." )
+print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
 print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
@@ -117,27 +118,39 @@ addDescBool = set_list[25]  #개인 상세페이지 상,하단 이미지 사용 
 #계산이 필요한 금액은 숫자형으로 변경
 
 # ### url 필드에서 상품ID 추출
-def clean_text(shop_url):
-    text_del = re.sub('pvid=|trackid=|refid=|skuId=',' ',shop_url)
-    return text_del
+shop_type =df['사이트'][0]
+url_shop = df['사이트'][1]
 
-dfUrl = df.iloc[0,0:1]
-pd_url = dfUrl[0]
-string = clean_text(pd_url)
-sampl_li = string.split('&')
+def extract_id(site, url):
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+    
+    if site == '타오바오URL':
+        product_id = query_params.get('id', [''])[0]
+        product_url = "https://item.taobao.com/item.htm?id=" + product_id
+        return product_id, product_url
+    
+    elif site == '1688URL':
+        file_name = os.path.splitext(os.path.basename(parsed_url.path))[0]
+        product_id = file_name.split("_")[-1]
+        product_url = "https://detail.1688.com/offer/" + product_id + ".html"
+        return product_id, product_url
+    
+    else:
+        return "", ""
 
-cord_li = []
+productCord, product_url = extract_id(shop_type, url_shop)
 
-for cord in sampl_li:
-    if 'id=' in cord:
-        cord_li.append(cord)
+if productCord =="":
+    print("입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음")
 
-num = cord_li[0]
-cord_num = re.findall('\d',num)
-productCord = "".join(cord_num)
-taobaoUrl = "https://item.taobao.com/item.htm?id=" + productCord
-print('url 추출 완료!')
-print('제품코드 추출 완료!: '+ productCord)
+else:
+    print('url 추출 완료!')
+    print('제품코드 추출 완료!: '+ productCord)
+    
+# 엑셀 기입용 제품코드
+writePdCord = shop_type + '_' + productCord
+
 # ### 상품명 추출
 dfName = df.iloc[0,1:2]
 pName = str(dfName[0])
@@ -238,16 +251,6 @@ price_min = goods_clear['기본판매가'].min()
 # * 옵션별 판매가격이 차이가 없을 경우는 최소 금액이 판매가격이 됨
 basePrice = np.int64(price_min)
 
-# * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격이 되도록  
-# 2023-01-31에 올려주지 않는 것으로 수정
-'''
-if price_max-price_min == 0:
-    basePrice = price_min
-else:
-    basePrice = price_min+(price_max-price_min)*2
-basePrice = np.int64(basePrice)
-'''
-
 # * 정해 놓은 마진 이상 남도록 최종판매가 다시 계산
 # * setting시트에서 불러온 최소마진 설정값과 1차 계산 시 도출된 마진의 최소값과 비교한다.
 # * 마진 리스트의 최소값이 < 최소마진(marginMin) 일 때 부족한 만큼 판매가격을 높여준다.
@@ -324,8 +327,7 @@ if optionColcnt == 5:
     if dupPriceCnt1 >= 2:
         print('"첫번째 옵션이 가격을 결정합니다."')
         df_option1 = df_gc[optionT1].drop_duplicates()
-        intdeff = string
-
+        
         for op in df_option1:
             option_deff = goods_clear.loc[goods_clear[optionT1] == op]
             intdeff = option_deff['옵션차액'].drop_duplicates()
@@ -344,8 +346,7 @@ if optionColcnt == 5:
     elif dupPriceCnt2 >= 2:
         print('"두번째 옵션이 가격을 결정합니다."')
         df_option1 = df_gc[optionT2].drop_duplicates()
-        intdeff = string
-
+        
         for op in df_option1:
             option_deff = goods_clear.loc[goods_clear[optionT2] == op]
             intdeff = option_deff['옵션차액'].drop_duplicates()
@@ -443,7 +444,11 @@ df_opurl = df.iloc[0:,3:5]
 df_filter = df_opurl.drop_duplicates(subset=optionT1,ignore_index=False)
 img_option = df_filter['옵션이미지']
 img_optionTag = img_option.str.replace('<img src="','')
+img_optionTag = img_optionTag.str.replace("<img src='",'')
 img_optionTag = img_optionTag.str.replace('"/>','')
+img_optionTag = img_optionTag.str.replace("'/>",'')
+img_optionTag = img_optionTag.str.replace('" />','')
+img_optionTag = img_optionTag.str.replace("' />",'')
 
 op_imgurls = img_optionTag.values.tolist()
 OpTitle = df_filter[optionT1]
@@ -483,27 +488,8 @@ else:
     print(Fore.RED + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + Fore.RESET+'\n')
 
 
-'''
-naverDesclist = descNaver.split('\n')
-#shop11Desclist = desc11st.split('\n')
-pDescNaverList = p_desc.split('\n')
-
-
-naverlist = []
-for descStr in naverDesclist :
-    naverlist.append("<div>" + descStr + "</div>")
-descNaver = "<div align='center'>" + str("".join(naverlist)) + "</div>"
-descNaver = descNaver.replace('<img src=""/>', '')
-
-publish_Nlist = []
-for descStr in pDescNaverList :
-    publish_Nlist.append("<div>" + descStr + "</div>")
-descPN = "<div align='center'>" + str("".join(publish_Nlist)) + "</div>"
-descPN = descPN.replace('<img src=""/>', '')
-
-'''
-
 print("상세페이지 작성 완료!")
+
 # ### 엑셀에 기재될 배송비
 if ship_method == "유료":
     ship_price = rship_price
@@ -597,7 +583,7 @@ ws["G2"].value = as_tel
 ws["H2"].value = mainImage
 ws["I2"].value = subImages
 ws["J2"].value = descNaver
-ws["k2"].value = productCord
+ws["k2"].value = writePdCord
 ws["L2"].value = " "
 ws["M2"].value = factory_desc
 ws["N2"].value = brand_info
@@ -667,9 +653,9 @@ ws["BT2"].value = " "
 ws["BU2"].value = " "
 ws["BV2"].value = nickName # 작성자
 ws["BW2"].value = tday_f # 소싱일
-ws["BX2"].value = productCord
+ws["BX2"].value = writePdCord
 ws["BY2"].value = pName
-ws["BZ2"].value = "https://item.taobao.com/item.htm?id="+productCord
+ws["BZ2"].value = product_url
 ws["CA2"].value = goods_clear['위안화'].min()
 ws["CB2"].value =rate
 ws["CC2"].value = goods_clear['실제배송비'].min()
@@ -706,7 +692,7 @@ p_ws["G2"].value = "000-000-0000"
 p_ws["H2"].value = mainImage
 p_ws["I2"].value = subImages
 p_ws["J2"].value = descPN
-p_ws["k2"].value = productCord
+p_ws["k2"].value = writePdCord
 p_ws["L2"].value = " "
 p_ws["M2"].value = "factory_desc"
 p_ws["N2"].value = "brand_info"
@@ -775,9 +761,9 @@ p_ws["BT2"].value = " "
 p_ws["BU2"].value = " "
 p_ws["BV2"].value = nickName # 작성자
 p_ws["BW2"].value = tday_f # 소싱일
-p_ws["BX2"].value = productCord
+p_ws["BX2"].value = writePdCord
 p_ws["BY2"].value = pName
-p_ws["BZ2"].value = "https://item.taobao.com/item.htm?id="+productCord
+p_ws["BZ2"].value = product_url
 p_ws["CA2"].value = goods_clear['위안화'].min()
 p_ws["CB2"].value =rate
 p_ws["CC2"].value = goods_clear['실제배송비'].min()
@@ -840,7 +826,9 @@ try:
     # 상세 이미지 다운로드
     descimgNum = 0
     descPages = descPages.replace('?getAvatar=avatar','')
-    modUrls = re.findall('<img.*?src="(.*?)".*?>', descPages)
+    modUrls1 = re.findall('<img.*?src="(.*?)".*?>', descPages)
+    modUrls2 = re.findall("<img.*?src='(.*?)'.*?>", descPages)
+    modUrls = modUrls1 + modUrls2
 
 except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.')
@@ -869,11 +857,6 @@ fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
 
-print('\n'+ Fore.BLUE + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
+print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
 exit()
-
-
-
-
-
