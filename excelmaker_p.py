@@ -145,8 +145,8 @@ if productCord =="":
     print("입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음")
 
 else:
-    print('url 추출 완료!')
-    print('제품코드 추출 완료!: '+ productCord)
+    print('url 추출 완료!: '+ shop_type)
+    print('제품코드 추출 완료!: ' + productCord)
     
 # 엑셀 기입용 제품코드
 writePdCord = shop_type + '_' + productCord
@@ -327,7 +327,7 @@ if optionColcnt == 5:
     if dupPriceCnt1 >= 2:
         print('"첫번째 옵션이 가격을 결정합니다."')
         df_option1 = df_gc[optionT1].drop_duplicates()
-        
+                
         for op in df_option1:
             option_deff = goods_clear.loc[goods_clear[optionT1] == op]
             intdeff = option_deff['옵션차액'].drop_duplicates()
