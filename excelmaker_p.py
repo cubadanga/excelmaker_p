@@ -1,3 +1,4 @@
+
 import pandas as pd
 import openpyxl
 from  openpyxl.styles  import  Alignment
@@ -6,7 +7,7 @@ import numpy as np
 import random
 import re
 import os
-from sys import exit
+import sys
 import shutil
 import time
 from urllib.error import HTTPError
@@ -16,7 +17,7 @@ from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
 from colorama import init, Fore
-
+np.set_printoptions(threshold=np.inf, linewidth=np.inf)
 init()
 
 print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
@@ -79,10 +80,17 @@ try:
     setpd = setpd.fillna('')
     
 except ValueError as e:
-    print(Fore.RED + '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.')
+    print(Fore.RED + '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+'\n')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    Exit()
+    sys.exit()
+
+except FileNotFoundError as e:
+    print(Fore.RED + '오류 - product.xlsx 파일을 찾을 수 없습니다.'+'\n'+'이런 경우, 파일명이 잘못된 경우가 대부분이었습니다.'+' 이 파일은 필수 파일입니다.'+'\n')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
+    
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
@@ -119,18 +127,18 @@ addDescBool = set_list[25]  #개인 상세페이지 상,하단 이미지 사용 
 
 # ### url 필드에서 상품ID 추출
 shop_type =df['사이트'][0]
-url_shop = df['사이트'][1]
+url_shop = df['url'][0]
 
 def extract_id(site, url):
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
     
-    if site == '타오바오URL':
+    if site == 'taobao':
         product_id = query_params.get('id', [''])[0]
         product_url = "https://item.taobao.com/item.htm?id=" + product_id
         return product_id, product_url
     
-    elif site == '1688URL':
+    elif site == 'shop1688':
         file_name = os.path.splitext(os.path.basename(parsed_url.path))[0]
         product_id = file_name.split("_")[-1]
         product_url = "https://detail.1688.com/offer/" + product_id + ".html"
@@ -142,7 +150,7 @@ def extract_id(site, url):
 productCord, product_url = extract_id(shop_type, url_shop)
 
 if productCord =="":
-    print("입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음")
+    print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음.'+Fore.RESET+'\n')
 
 else:
     print('url 추출 완료!: '+ shop_type)
@@ -152,8 +160,7 @@ else:
 writePdCord = shop_type + '_' + productCord
 
 # ### 상품명 추출
-dfName = df.iloc[0,1:2]
-pName = str(dfName[0])
+pName = df['상품명'][0]
 print('제목 추출 완료!: ' + pName)
 
 # 카테고리 번호 추출
@@ -167,8 +174,9 @@ quanty_list = list(quanty)
 quantyString = ",".join(quanty_list)
 
 # 동영상 url 추출
-dfVurl = df.iloc[0,11:12]
-videourl = str(dfVurl[0])
+#dfVurl = df.iloc[0,11:12]
+videourl = str(df['동영상url'][0])
+
 if videourl == 'nan':
     videourl = '동영상이 없습니다.'
     print('동영상 url은 없었습니다.')
@@ -180,7 +188,7 @@ else:
 # * price 시트의 행이 가변될 때 추출할 범위도 가변시켜 해당 옵션명을 받아온다.
 # * 옵션의 조합이 몇개인지 판단하여 빈열 삭제
 
-df_goods = df.iloc[0:,4:7]
+df_goods = df.iloc[0:,5:6]
 df_goods.replace('', np.nan, inplace=True)
 goods_Tclear = df_goods.dropna(axis=1)
 colcount = len(goods_Tclear.columns)
@@ -202,8 +210,9 @@ elif colcount == 1:
 
 # 옵션에 관련된 데이터 열을 다 추출하여 계산에 사용함
 
-df_optiongoods = df.iloc[0:,4:10]
+df_optiongoods = df.iloc[0:,5:10]
 df_optiongoods.replace('', np.nan, inplace=True)
+
 
 goods_clear = df_optiongoods.dropna(axis=1).copy()
 
@@ -290,9 +299,8 @@ else:
 
 print('가격계산 완료!')
 
-tuneMargin = round(tune_marginPrice-goods_clear['구매원가'].min()-goods_clear['실제배송비'].min(),-2)
+tuneMargin = round(tune_marginPrice-goods_clear['구매원가'].min()-(tune_marginPrice*fee_naver/100),-2)
 tuneMarginRate = round(tuneMargin/tune_marginPrice*100,0)
-
 
 # ### 옵션항목 뽑기
 option_list1 = []
@@ -367,7 +375,6 @@ if optionColcnt == 5:
 elif optionColcnt == 4:
     df_option1 = df_gc[optionT1].drop_duplicates()  # 첫번째 필드의 데이터들을 프레임에 담는다.
 
-    intdeff = string
     # 일단 같은 옵션명과 금액을 가진 놈들을 뽑아 중복제거 후 리스트에 담는다.
     # int로 변경 후 다른 이름을 또 검색해서 중복제거 후 계속 추가한다.
     # 완성된 리스트를 스트링으로 변환한다.
@@ -430,7 +437,7 @@ except TypeError:
     print(Fore.RED + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다.')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    exit()
+    sys.exit()
     
 
 descPname = '<br><br><h1 style="text-align: center;"><strong>' + pName + "</strong></h1><br><br>"+'\n'
@@ -440,29 +447,44 @@ naverBottom2 = '<img src="' + naver_bottom2 + '"/>'+'\n'
 #shop11Top = '<img src="' + shop11st_top + '"/>'+'\n'
 #shop11stBottom = '<img src="' + shop11st_bottom + '"/>'+'\n'
 
-df_opurl = df.iloc[0:,3:5]
-df_filter = df_opurl.drop_duplicates(subset=optionT1,ignore_index=False)
-img_option = df_filter['옵션이미지']
-img_optionTag = img_option.str.replace('<img src="','')
-img_optionTag = img_optionTag.str.replace("<img src='",'')
-img_optionTag = img_optionTag.str.replace('"/>','')
-img_optionTag = img_optionTag.str.replace("'/>",'')
-img_optionTag = img_optionTag.str.replace('" />','')
-img_optionTag = img_optionTag.str.replace("' />",'')
-
-op_imgurls = img_optionTag.values.tolist()
+try:
+    df_opurl = df.iloc[0:,4:6]
+    df_filter = df_opurl.drop_duplicates(subset=optionT1,ignore_index=False)
+    img_option = df_filter['옵션이미지']
+    img_optionTag = img_option.str.replace('<img src="','')
+    img_optionTag = img_optionTag.str.replace("<img src='",'')
+    img_optionTag = img_optionTag.str.replace('"/>','')
+    img_optionTag = img_optionTag.str.replace("'/>",'')
+    img_optionTag = img_optionTag.str.replace('" />','')
+    img_optionTag = img_optionTag.str.replace("' />",'')
+    op_imgurls = img_optionTag.values.tolist()
+except KeyError:
+    print(Fore.RED + '오류 - 옵션이미지 필드에 url이 없거나 잘못 되었습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
+    
 OpTitle = df_filter[optionT1]
 op_titlelist = OpTitle.values.tolist()
 optionLen = len(op_titlelist)
 
 opjoin_list = []
 cntj=1
-for i in range(optionLen):
-    strtitle = '<div align="center"><div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
-    strImg = '<div align="center"><img src="'+op_imgurls[i]+'"/></div><br><br>'
-    opjoin_list.append(strtitle+strImg)
-    cntj += 1
 
+for i in range(optionLen):
+    
+    try :
+        strtitle = '<div align="center"><div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
+        strImg = '<div align="center"><img src="'+op_imgurls[i]+'"/></div><br><br>'
+        opjoin_list.append(strtitle+strImg)
+        cntj += 1
+    
+    except TypeError as e:
+        print(Fore.RED + '오류 - 옵션 url을 입력하지 않은 것 같습니다.')
+        print(Fore.RESET + "엔터를 누르면 종료합니다.")
+        aInput = input("")
+        sys.exit()
+    
 opjoinStr = str("\n".join(opjoin_list))
 optionHtml = '<br><br><img src="https://i.ibb.co/vZpWH4Z/option-Img.png" alt="option-Img" border="0"><br>'+ opjoinStr
 
@@ -509,7 +531,7 @@ except FileNotFoundError as e:
     print(Fore.RED + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    exit()
+    sys.exit()
 
 if len(file_names) > 0:
     i = 1
@@ -784,7 +806,6 @@ new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
 print("배포용파일 작성완료!")
 
-
 # 이미지 저장용 폴더 생성
 
 tday = time.time()
@@ -798,7 +819,7 @@ def createFolder(directory):
         print (Fore.RED + '오류 - Creating directory. ' +  directory)
         print(Fore.RESET + "엔터를 누르면 종료합니다.")
         aInput = input("")
-        exit()
+        sys.exit()
 
 pathf = ""
 pathf = './excel/'+ productCord
@@ -834,7 +855,7 @@ except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    exit()
+    sys.exit()
 
 
 try:    
@@ -849,14 +870,13 @@ try:
         descimgNum +=1
 
 except urllib.error.HTTPError:
-    print(Fore.RED + '오류 - 타오바오에 크롬 로그인이 필요하거나 올바른 상세 url이 아닙니다.')
+    print(Fore.RED + '오류 - 해외쇼핑몰 로그인이 필요하거나 올바른 상세 url이 아닙니다.')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-
+    sys.exit()
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
 
 print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
-exit()
