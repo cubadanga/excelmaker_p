@@ -90,7 +90,9 @@ except FileNotFoundError as e:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
-    
+
+copy_df = df
+copy_df = df.to_excel(excel_writer='./test1.xlsx', index=False)
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
@@ -149,6 +151,9 @@ def extract_id(site, url):
 
 productCord, product_url = extract_id(shop_type, url_shop)
 
+
+print('id: ',productCord, 'url',product_url)
+
 if productCord =="":
     print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음.'+Fore.RESET+'\n')
 
@@ -180,6 +185,7 @@ videourl = str(df['동영상url'][0])
 if videourl == 'nan':
     videourl = '동영상이 없습니다.'
     print('동영상 url은 없었습니다.')
+    
 else:
     print('동영상 url 복사완료!')
 
@@ -188,7 +194,7 @@ else:
 # * price 시트의 행이 가변될 때 추출할 범위도 가변시켜 해당 옵션명을 받아온다.
 # * 옵션의 조합이 몇개인지 판단하여 빈열 삭제
 
-df_goods = df.iloc[0:,5:6]
+df_goods = df.iloc[0:,5:7]
 df_goods.replace('', np.nan, inplace=True)
 goods_Tclear = df_goods.dropna(axis=1)
 colcount = len(goods_Tclear.columns)
@@ -196,12 +202,7 @@ colcount = len(goods_Tclear.columns)
 gooddf = goods_Tclear.columns
 optionTitle = str("\n".join(gooddf))
 
-if colcount == 3:
-    optionN1 = gooddf[0]
-    optionN2 = gooddf[1]
-    optionN3 = gooddf[2]
-    
-elif colcount == 2:
+if colcount == 2:
     optionN1 = gooddf[0]
     optionN2 = gooddf[1]
 
@@ -210,7 +211,7 @@ elif colcount == 1:
 
 # 옵션에 관련된 데이터 열을 다 추출하여 계산에 사용함
 
-df_optiongoods = df.iloc[0:,5:10]
+df_optiongoods = df.iloc[0:,5:11]
 df_optiongoods.replace('', np.nan, inplace=True)
 
 
@@ -430,8 +431,9 @@ try:
     dpHtml = df['상세페이지']
     dpHtml_list = list(dpHtml)
     preDescPages = dpHtml_list[0]
-    descPages1 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
-    descPages = re.sub("< ", "<", descPages1)+'\n'
+    descPages2 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
+    descPages1 = re.sub("< ", "<", descPages2)+'\n'
+    descPages = '<div align="center">' + descPages1 + '</div>'
 
 except TypeError:
     print(Fore.RED + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다.')
@@ -441,9 +443,9 @@ except TypeError:
     
 
 descPname = '<br><br><h1 style="text-align: center;"><strong>' + pName + "</strong></h1><br><br>"+'\n'
-naverTop = '<img src="' + naver_top + '"/>'+'\n'
-naverBottom = '<img src="' + naver_bottom + '"/>'+'\n'
-naverBottom2 = '<img src="' + naver_bottom2 + '"/>'+'\n'
+naverTop = '<div align="center"><img src="' + naver_top + '"/></div>'+'\n'
+naverBottom = '<div align="center"><img src="' + naver_bottom + '"/></div>'+'\n'
+naverBottom2 = '<div align="center"><img src="' + naver_bottom2 + '"/></div>'+'\n'
 #shop11Top = '<img src="' + shop11st_top + '"/>'+'\n'
 #shop11stBottom = '<img src="' + shop11st_bottom + '"/>'+'\n'
 
@@ -486,7 +488,7 @@ for i in range(optionLen):
         sys.exit()
     
 opjoinStr = str("\n".join(opjoin_list))
-optionHtml = '<br><br><img src="https://i.ibb.co/vZpWH4Z/option-Img.png" alt="option-Img" border="0"><br>'+ opjoinStr
+optionHtml = '<br><div align="center"><img src="https://i.ibb.co/vZpWH4Z/option-Img.png" alt="option-Img" border="0"></div><br>'+ opjoinStr
 
 descNaver = ""
 desc11st = ""
@@ -837,7 +839,7 @@ try:
     for i in op_imgurls: 
         file_ext = i.split('.')[-1] # 확장자 추출
         path = pathOption + '/' + productCord + '_option_' + str(optionNum)+'.' + file_ext
-        random_number = round(random.uniform(0.07, 0.3), 2)
+        random_number = round(random.uniform(0.07, 0.2), 2)
         
         time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
