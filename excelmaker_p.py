@@ -91,9 +91,6 @@ except FileNotFoundError as e:
     aInput = input("")
     sys.exit()
 
-copy_df = df
-copy_df = df.to_excel(excel_writer='./test1.xlsx', index=False)
-
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
 
@@ -827,9 +824,12 @@ pathf = ""
 pathf = './excel/'+ productCord
 pathDesc = './excel/'+ productCord +'/Desc'
 pathOption = './excel/'+ productCord +'/Option'
+pathBackup = './excel/product_backup'
 createFolder(pathf)
 createFolder(pathDesc)
 createFolder(pathOption)
+createFolder(pathBackup)
+
 print('이미지 폴더 생성 완료!'+'\n')
 
 # 옵션 이미지 다운로드
@@ -879,6 +879,9 @@ except urllib.error.HTTPError:
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
+
+copy_df = df
+copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+tday_s+'.xlsx', index=False)
 
 print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
