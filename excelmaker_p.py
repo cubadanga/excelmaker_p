@@ -270,8 +270,6 @@ else :
     price_correction = 0
     price_correction = np.int64(round(price_correction,-2))
     
-
-
 # * 최종판매가 = 기본판매가격+마진보정금액
 tune_marginPrice = basePrice + price_correction
 
