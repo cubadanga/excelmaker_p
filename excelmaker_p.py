@@ -1,3 +1,4 @@
+
 import pandas as pd
 import openpyxl
 from  openpyxl.styles  import  Alignment
@@ -6,17 +7,21 @@ import numpy as np
 import random
 import re
 import os
-from sys import exit
+import sys
 import shutil
 import time
 from urllib.error import HTTPError
 import urllib.request
 from urllib.request import urlopen
+from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
-from termcolor import colored, cprint
+from colorama import init, Fore
+np.set_printoptions(threshold=np.inf, linewidth=np.inf)
+init()
 
-print(colored('엑셀파일 작성을 시작 합니다. 작성중...','blue'))
+print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
+print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
@@ -52,12 +57,11 @@ def judge(password,passTag):
         properties.set('DEFAULT','UserPass',password)
         with open('./set.ini','w',encoding='utf-8') as F:
             properties.write(F)
-        
-        
-        print('\n' + "이번 달 패스워드 체크 OK! 오늘도 파이팅!"+ '\n')
+                
+        print("이번 달 패스워드 체크 OK! 오늘도 파이팅!")
         pass
     else:
-        print(colored('\n' + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다.",red))
+        print(Fore.RED + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다. 패스워드는 단체방 금월 암호 공지를 확인하세요."+Fore.RESET+'\n')
         inputPass(password,passTag)
 
 def inputPass(password,passTag):
@@ -76,10 +80,16 @@ try:
     setpd = setpd.fillna('')
     
 except ValueError as e:
-    print('\n' + '\033[31m \033[43m'+ '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+ '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - 엑셀 시트의 시트명이 다르거나 올바른 파일이 아닙니다.'+'\n')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    Exit()
+    sys.exit()
+
+except FileNotFoundError as e:
+    print(Fore.RED + '오류 - product.xlsx 파일을 찾을 수 없습니다.'+'\n'+'이런 경우, 파일명이 잘못된 경우가 대부분이었습니다.'+' 이 파일은 필수 파일입니다.'+'\n')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
 pd.set_option('display.max_columns', None)
@@ -115,30 +125,44 @@ addDescBool = set_list[25]  #개인 상세페이지 상,하단 이미지 사용 
 #계산이 필요한 금액은 숫자형으로 변경
 
 # ### url 필드에서 상품ID 추출
-def clean_text(shop_url):
-    text_del = re.sub('pvid=|trackid=|refid=|skuId=',' ',shop_url)
-    return text_del
+shop_type =df['사이트'][0]
+url_shop = df['url'][0]
 
-dfUrl = df.iloc[0,0:1]
-pd_url = dfUrl[0]
-string = clean_text(pd_url)
-sampl_li = string.split('&')
+def extract_id(site, url):
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+    
+    if site == 'taobao':
+        product_id = query_params.get('id', [''])[0]
+        product_url = "https://item.taobao.com/item.htm?id=" + product_id
+        return product_id, product_url
+    
+    elif site == 'shop1688':
+        file_name = os.path.splitext(os.path.basename(parsed_url.path))[0]
+        product_id = file_name.split("_")[-1]
+        product_url = "https://detail.1688.com/offer/" + product_id + ".html"
+        return product_id, product_url
+    
+    else:
+        return "", ""
 
-cord_li = []
+productCord, product_url = extract_id(shop_type, url_shop)
 
-for cord in sampl_li:
-    if 'id=' in cord:
-        cord_li.append(cord)
 
-num = cord_li[0]
-cord_num = re.findall('\d',num)
-productCord = "".join(cord_num)
-taobaoUrl = "https://item.taobao.com/item.htm?id=" + productCord
-print('url 추출 완료!')
-print('제품코드 추출 완료!: '+ productCord)
+print('추출한 id: ',productCord, '추출한 url',product_url)
+
+if productCord =="":
+    print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음.'+Fore.RESET+'\n')
+
+else:
+    print('상점타입: '+ shop_type)
+    print('제품코드 추출 완료!: ' + productCord)
+    
+# 엑셀 기입용 제품코드
+writePdCord = shop_type + '_' + productCord
+
 # ### 상품명 추출
-dfName = df.iloc[0,1:2]
-pName = str(dfName[0])
+pName = df['상품명'][0]
 print('제목 추출 완료!: ' + pName)
 
 # 카테고리 번호 추출
@@ -152,11 +176,13 @@ quanty_list = list(quanty)
 quantyString = ",".join(quanty_list)
 
 # 동영상 url 추출
-dfVurl = df.iloc[0,11:12]
-videourl = str(dfVurl[0])
+#dfVurl = df.iloc[0,11:12]
+videourl = str(df['동영상url'][0])
+
 if videourl == 'nan':
     videourl = '동영상이 없습니다.'
     print('동영상 url은 없었습니다.')
+    
 else:
     print('동영상 url 복사완료!')
 
@@ -165,7 +191,7 @@ else:
 # * price 시트의 행이 가변될 때 추출할 범위도 가변시켜 해당 옵션명을 받아온다.
 # * 옵션의 조합이 몇개인지 판단하여 빈열 삭제
 
-df_goods = df.iloc[0:,4:7]
+df_goods = df.iloc[0:,5:7]
 df_goods.replace('', np.nan, inplace=True)
 goods_Tclear = df_goods.dropna(axis=1)
 colcount = len(goods_Tclear.columns)
@@ -173,12 +199,7 @@ colcount = len(goods_Tclear.columns)
 gooddf = goods_Tclear.columns
 optionTitle = str("\n".join(gooddf))
 
-if colcount == 3:
-    optionN1 = gooddf[0]
-    optionN2 = gooddf[1]
-    optionN3 = gooddf[2]
-    
-elif colcount == 2:
+if colcount == 2:
     optionN1 = gooddf[0]
     optionN2 = gooddf[1]
 
@@ -187,8 +208,9 @@ elif colcount == 1:
 
 # 옵션에 관련된 데이터 열을 다 추출하여 계산에 사용함
 
-df_optiongoods = df.iloc[0:,4:10]
+df_optiongoods = df.iloc[0:,5:11]
 df_optiongoods.replace('', np.nan, inplace=True)
+
 
 goods_clear = df_optiongoods.dropna(axis=1).copy()
 
@@ -236,16 +258,6 @@ price_min = goods_clear['기본판매가'].min()
 # * 옵션별 판매가격이 차이가 없을 경우는 최소 금액이 판매가격이 됨
 basePrice = np.int64(price_min)
 
-# * 옵션들의 판매 가격의 차이가 있을 경우에는 최소가격+(최대가격-최소가격)*2가 판매가격이 되도록  
-# 2023-01-31에 올려주지 않는 것으로 수정
-'''
-if price_max-price_min == 0:
-    basePrice = price_min
-else:
-    basePrice = price_min+(price_max-price_min)*2
-basePrice = np.int64(basePrice)
-'''
-
 # * 정해 놓은 마진 이상 남도록 최종판매가 다시 계산
 # * setting시트에서 불러온 최소마진 설정값과 1차 계산 시 도출된 마진의 최소값과 비교한다.
 # * 마진 리스트의 최소값이 < 최소마진(marginMin) 일 때 부족한 만큼 판매가격을 높여준다.
@@ -285,9 +297,8 @@ else:
 
 print('가격계산 완료!')
 
-tuneMargin = round(tune_marginPrice-goods_clear['구매원가'].min()-goods_clear['실제배송비'].min(),-2)
+tuneMargin = round(tune_marginPrice-goods_clear['구매원가'].min()-(tune_marginPrice*fee_naver/100),-2)
 tuneMarginRate = round(tuneMargin/tune_marginPrice*100,0)
-
 
 # ### 옵션항목 뽑기
 option_list1 = []
@@ -322,8 +333,7 @@ if optionColcnt == 5:
     if dupPriceCnt1 >= 2:
         print('"첫번째 옵션이 가격을 결정합니다."')
         df_option1 = df_gc[optionT1].drop_duplicates()
-        intdeff = string
-
+                
         for op in df_option1:
             option_deff = goods_clear.loc[goods_clear[optionT1] == op]
             intdeff = option_deff['옵션차액'].drop_duplicates()
@@ -342,8 +352,7 @@ if optionColcnt == 5:
     elif dupPriceCnt2 >= 2:
         print('"두번째 옵션이 가격을 결정합니다."')
         df_option1 = df_gc[optionT2].drop_duplicates()
-        intdeff = string
-
+        
         for op in df_option1:
             option_deff = goods_clear.loc[goods_clear[optionT2] == op]
             intdeff = option_deff['옵션차액'].drop_duplicates()
@@ -364,7 +373,6 @@ if optionColcnt == 5:
 elif optionColcnt == 4:
     df_option1 = df_gc[optionT1].drop_duplicates()  # 첫번째 필드의 데이터들을 프레임에 담는다.
 
-    intdeff = string
     # 일단 같은 옵션명과 금액을 가진 놈들을 뽑아 중복제거 후 리스트에 담는다.
     # int로 변경 후 다른 이름을 또 검색해서 중복제거 후 계속 추가한다.
     # 완성된 리스트를 스트링으로 변환한다.
@@ -420,44 +428,64 @@ try:
     dpHtml = df['상세페이지']
     dpHtml_list = list(dpHtml)
     preDescPages = dpHtml_list[0]
-    descPages1 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
-    descPages = re.sub("< ", "<", descPages1)+'\n'
+    descPages2 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
+    descPages1 = re.sub("< ", "<", descPages2)+'\n'
+    descPages = '<div align="center">' + descPages1 + '</div>'
 
 except TypeError:
-    print('\n' + '\033[31m \033[43m' + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다. '+ '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    exit()
+    sys.exit()
     
 
 descPname = '<br><br><h1 style="text-align: center;"><strong>' + pName + "</strong></h1><br><br>"+'\n'
-naverTop = '<img src="' + naver_top + '"/>'+'\n'
-naverBottom = '<img src="' + naver_bottom + '"/>'+'\n'
-naverBottom2 = '<img src="' + naver_bottom2 + '"/>'+'\n'
+naverTop = '<div align="center"><img src="' + naver_top + '"/></div>'+'\n'
+naverBottom = '<div align="center"><img src="' + naver_bottom + '"/></div>'+'\n'
+naverBottom2 = '<div align="center"><img src="' + naver_bottom2 + '"/></div>'+'\n'
 #shop11Top = '<img src="' + shop11st_top + '"/>'+'\n'
 #shop11stBottom = '<img src="' + shop11st_bottom + '"/>'+'\n'
 
-df_opurl = df.iloc[0:,3:5]
-df_filter = df_opurl.drop_duplicates(subset=optionT1,ignore_index=False)
-img_option = df_filter['옵션이미지']
-img_optionTag = img_option.str.replace('<img src="','')
-img_optionTag = img_optionTag.str.replace('"/>','')
-
-op_imgurls = img_optionTag.values.tolist()
+try:
+    df_opurl = df.iloc[0:,4:6]
+    df_filter = df_opurl.drop_duplicates(subset=optionT1,ignore_index=False)
+    img_option = df_filter['옵션이미지']
+    img_optionTag = img_option.str.replace('<img src="','')
+    img_optionTag = img_optionTag.str.replace("<img src='",'')
+    img_optionTag = img_optionTag.str.replace('"/>','')
+    img_optionTag = img_optionTag.str.replace("'/>",'')
+    img_optionTag = img_optionTag.str.replace('" />','')
+    img_optionTag = img_optionTag.str.replace("' />",'')
+    op_imgurls = img_optionTag.values.tolist()
+except KeyError:
+    print(Fore.RED + '오류 - 옵션이미지 필드에 url이 없거나 잘못 되었습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
+    
 OpTitle = df_filter[optionT1]
 op_titlelist = OpTitle.values.tolist()
 optionLen = len(op_titlelist)
 
 opjoin_list = []
 cntj=1
-for i in range(optionLen):
-    strtitle = '<div align="center"><div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
-    strImg = '<div align="center"><img src="'+op_imgurls[i]+'"/></div><br><br>'
-    opjoin_list.append(strtitle+strImg)
-    cntj += 1
 
+for i in range(optionLen):
+    
+    try :
+        strtitle = '<div align="center"><div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
+        strImg = '<div align="center"><img src="'+op_imgurls[i]+'"/></div><br><br>'
+        opjoin_list.append(strtitle+strImg)
+        cntj += 1
+    
+    except TypeError as e:
+        print(Fore.RED + '오류 - 옵션 url을 입력하지 않은 것 같습니다.')
+        print(Fore.RESET + "엔터를 누르면 종료합니다.")
+        aInput = input("")
+        sys.exit()
+    
 opjoinStr = str("\n".join(opjoin_list))
-optionHtml = '<br><br><img src="https://i.ibb.co/vZpWH4Z/option-Img.png" alt="option-Img" border="0"><br>'+ opjoinStr
+optionHtml = '<br><div align="center"><img src="https://i.ibb.co/vZpWH4Z/option-Img.png" alt="option-Img" border="0"></div><br>'+ opjoinStr
 
 descNaver = ""
 desc11st = ""
@@ -478,30 +506,11 @@ elif addDescBool ==1:
     descPN = "<div align='center'>" + descNaver + "</div>"
 
 else:
-    print('\n' + '\033[31m \033[43m' + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + '\033[0m')
+    print(Fore.RED + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + Fore.RESET+'\n')
 
-
-'''
-naverDesclist = descNaver.split('\n')
-#shop11Desclist = desc11st.split('\n')
-pDescNaverList = p_desc.split('\n')
-
-
-naverlist = []
-for descStr in naverDesclist :
-    naverlist.append("<div>" + descStr + "</div>")
-descNaver = "<div align='center'>" + str("".join(naverlist)) + "</div>"
-descNaver = descNaver.replace('<img src=""/>', '')
-
-publish_Nlist = []
-for descStr in pDescNaverList :
-    publish_Nlist.append("<div>" + descStr + "</div>")
-descPN = "<div align='center'>" + str("".join(publish_Nlist)) + "</div>"
-descPN = descPN.replace('<img src=""/>', '')
-
-'''
 
 print("상세페이지 작성 완료!")
+
 # ### 엑셀에 기재될 배송비
 if ship_method == "유료":
     ship_price = rship_price
@@ -518,10 +527,10 @@ try:
     file_names = os.listdir(file_path)
 
 except FileNotFoundError as e:
-    print('\n' + '\033[31m \033[43m' + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.' + '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - mainImage(메인이미지) 폴더가 존재하지 않습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    exit()
+    sys.exit()
 
 if len(file_names) > 0:
     i = 1
@@ -556,10 +565,10 @@ if len(file_names) > 0:
     folder_file_copy()
 
 else:
-    print('\n' + '\033[31m \033[43m' + "오류 - 메인이미지 폴더에 이미지가 없습니다." + '\033[0m')
+    print(Fore.RED + "오류 - 메인이미지 폴더에 이미지가 없습니다.")
     mainImage = ""
     subImages = ""
-print("메인이미지 수정/이동 완료!")
+print(Fore.RESET + "메인이미지 수정/이동 완료!")
 
 #스마트스토어 필드명 불러오기
 
@@ -595,7 +604,7 @@ ws["G2"].value = as_tel
 ws["H2"].value = mainImage
 ws["I2"].value = subImages
 ws["J2"].value = descNaver
-ws["k2"].value = productCord
+ws["k2"].value = writePdCord
 ws["L2"].value = " "
 ws["M2"].value = factory_desc
 ws["N2"].value = brand_info
@@ -665,9 +674,9 @@ ws["BT2"].value = " "
 ws["BU2"].value = " "
 ws["BV2"].value = nickName # 작성자
 ws["BW2"].value = tday_f # 소싱일
-ws["BX2"].value = productCord
+ws["BX2"].value = writePdCord
 ws["BY2"].value = pName
-ws["BZ2"].value = "https://item.taobao.com/item.htm?id="+productCord
+ws["BZ2"].value = product_url
 ws["CA2"].value = goods_clear['위안화'].min()
 ws["CB2"].value =rate
 ws["CC2"].value = goods_clear['실제배송비'].min()
@@ -704,7 +713,7 @@ p_ws["G2"].value = "000-000-0000"
 p_ws["H2"].value = mainImage
 p_ws["I2"].value = subImages
 p_ws["J2"].value = descPN
-p_ws["k2"].value = productCord
+p_ws["k2"].value = writePdCord
 p_ws["L2"].value = " "
 p_ws["M2"].value = "factory_desc"
 p_ws["N2"].value = "brand_info"
@@ -773,9 +782,9 @@ p_ws["BT2"].value = " "
 p_ws["BU2"].value = " "
 p_ws["BV2"].value = nickName # 작성자
 p_ws["BW2"].value = tday_f # 소싱일
-p_ws["BX2"].value = productCord
+p_ws["BX2"].value = writePdCord
 p_ws["BY2"].value = pName
-p_ws["BZ2"].value = "https://item.taobao.com/item.htm?id="+productCord
+p_ws["BZ2"].value = product_url
 p_ws["CA2"].value = goods_clear['위안화'].min()
 p_ws["CB2"].value =rate
 p_ws["CC2"].value = goods_clear['실제배송비'].min()
@@ -796,7 +805,6 @@ new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
 print("배포용파일 작성완료!")
 
-
 # 이미지 저장용 폴더 생성
 
 tday = time.time()
@@ -807,18 +815,21 @@ def createFolder(directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
     except OSError:
-        print ('\n' + '\033[31m \033[43m' + '오류 - Creating directory. ' +  directory + '\033[0m')
-        print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+        print (Fore.RED + '오류 - Creating directory. ' +  directory)
+        print(Fore.RESET + "엔터를 누르면 종료합니다.")
         aInput = input("")
-        exit()
+        sys.exit()
 
 pathf = ""
 pathf = './excel/'+ productCord
 pathDesc = './excel/'+ productCord +'/Desc'
 pathOption = './excel/'+ productCord +'/Option'
+pathBackup = './excel/product_backup'
 createFolder(pathf)
 createFolder(pathDesc)
 createFolder(pathOption)
+createFolder(pathBackup)
+
 print('이미지 폴더 생성 완료!'+'\n')
 
 # 옵션 이미지 다운로드
@@ -828,7 +839,7 @@ try:
     for i in op_imgurls: 
         file_ext = i.split('.')[-1] # 확장자 추출
         path = pathOption + '/' + productCord + '_option_' + str(optionNum)+'.' + file_ext
-        random_number = round(random.uniform(0.07, 0.3), 2)
+        random_number = round(random.uniform(0.07, 0.2), 2)
         
         time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
@@ -838,13 +849,15 @@ try:
     # 상세 이미지 다운로드
     descimgNum = 0
     descPages = descPages.replace('?getAvatar=avatar','')
-    modUrls = re.findall('<img.*?src="(.*?)".*?>', descPages)
+    modUrls1 = re.findall('<img.*?src="(.*?)".*?>', descPages)
+    modUrls2 = re.findall("<img.*?src='(.*?)'.*?>", descPages)
+    modUrls = modUrls1 + modUrls2
 
 except urllib.error.HTTPError:
-    print('\n' + '\033[31m \033[43m' + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.' + '\033[0m')
-    print('\033[31m' + "엔터를 누르면 종료합니다." + '\033[0m')
+    print(Fore.RED + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
-    exit()
+    sys.exit()
 
 
 try:    
@@ -859,18 +872,17 @@ try:
         descimgNum +=1
 
 except urllib.error.HTTPError:
-    print('\n' + '\033[31m \033[43m' + '오류 - 타오바오에 크롬 로그인이 필요하거나 올바른 상세 url이 아닙니다.'+'\033[0m')
-    exit()
-
+    print(Fore.RED + '오류 - 해외쇼핑몰 로그인이 필요하거나 올바른 상세 url이 아닙니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
+    
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
 
-print('\n' + '\033[96m' + "완성! 엔터를 누르면 종료합니다." + '\033[0m')
+copy_df = df
+copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+tday_s+'.xlsx', index=False)
+
+print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
-exit()
-
-
-
-
-
