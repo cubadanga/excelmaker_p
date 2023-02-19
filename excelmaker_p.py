@@ -17,15 +17,19 @@ from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
 from colorama import init, Fore
+
+#프린트문 색상 변경을 위해 초기화
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
 init()
 
-print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
+print(Fore.LIGHTBLUE_EX + "你好？今天也度过愉快的一天吧。작성을 시작 합니다. 작성중..." )
 print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
 # * 엑셀에서 setting 시트 (셋팅시트) 추출
+#중국버전에는 로그인 체크 하지 않음
+'''
 basedir = os.getcwd()
 ini_dir = os.path.join(basedir,'set.ini')
 
@@ -73,7 +77,7 @@ def inputPass(password,passTag):
     judge(userPass, passTag)
 
 judge(password,passTag)
-
+'''
 try:
     df = pd.read_excel('./product.xlsx', sheet_name = 'write', header = 0)
     setpd = pd.read_excel('./product.xlsx', sheet_name = 'setting', header = 0)
@@ -805,7 +809,7 @@ new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
 print("배포용파일 작성완료!")
 
-# 이미지 저장용 폴더 생성
+# 이미지 저장용 폴더 생성(중국버전에서는 제외)
 
 tday = time.time()
 fday = time.strftime('%Y%m%d',time.localtime(time.time()))
@@ -820,19 +824,19 @@ def createFolder(directory):
         aInput = input("")
         sys.exit()
 
-pathf = ""
-pathf = './excel/'+ productCord
-pathDesc = './excel/'+ productCord +'/Desc'
-pathOption = './excel/'+ productCord +'/Option'
+#pathf = ""
+#pathf = './excel/'+ productCord
+#pathDesc = './excel/'+ productCord +'/Desc'
+#pathOption = './excel/'+ productCord +'/Option'
 pathBackup = './excel/product_backup'
-createFolder(pathf)
-createFolder(pathDesc)
-createFolder(pathOption)
+#createFolder(pathf)
+#createFolder(pathDesc)
+#createFolder(pathOption)
 createFolder(pathBackup)
+print('폴더 생성 완료!'+'\n')
 
-print('이미지 폴더 생성 완료!'+'\n')
-
-# 옵션 이미지 다운로드
+# 옵션 이미지 다운로드(중국버전에서는 다운하지 않음)
+'''
 optionNum = 0
 ###
 try:
@@ -876,8 +880,9 @@ except urllib.error.HTTPError:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
-    
-fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
+'''
+fVideoUrl = open('./excel/'+ '동영상주소.txt','w')
+#fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')<--한국버전용
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
 
