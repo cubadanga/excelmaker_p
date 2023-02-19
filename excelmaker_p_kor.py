@@ -149,21 +149,21 @@ def extract_id(site, url):
 productCord, product_url = extract_id(shop_type, url_shop)
 
 
-print('id: ',productCord, 'url',product_url)
-
+print('id 추출성공: ',productCord)
+print('url 추출성공: ',product_url)
 if productCord =="":
     print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음.'+Fore.RESET+'\n')
 
 else:
-    print('url 추출 완료!: '+ shop_type)
-    print('제품코드 추출 완료!: ' + productCord)
+    print('사아트: '+ shop_type)
+    print('제품코드 추출성공: ' + productCord)
     
 # 엑셀 기입용 제품코드
 writePdCord = shop_type + '_' + productCord
 
 # ### 상품명 추출
 pName = df['상품명'][0]
-print('제목 추출 완료!: ' + pName)
+print('제목 추출 성공: ' + pName)
 
 # 카테고리 번호 추출
 categori = df['카테고리번호']
