@@ -825,11 +825,11 @@ def createFolder(directory):
         sys.exit()
 
 #pathf = ""
-#pathf = './excel/'+ productCord
+pathf = './excel/'+ productCord
 #pathDesc = './excel/'+ productCord +'/Desc'
 #pathOption = './excel/'+ productCord +'/Option'
 pathBackup = './excel/product_backup'
-#createFolder(pathf)
+createFolder(pathf)
 #createFolder(pathDesc)
 #createFolder(pathOption)
 createFolder(pathBackup)
@@ -881,13 +881,12 @@ except urllib.error.HTTPError:
     aInput = input("")
     sys.exit()
 '''
-fVideoUrl = open('./excel/'+ '동영상주소.txt','w')
+fVideoUrl = open(pathf+'/동영상주소.txt','w')
 #fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')<--한국버전용
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
 
 copy_df = df
 copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+tday_s+'.xlsx', index=False)
-
 print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
