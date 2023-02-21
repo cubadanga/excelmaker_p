@@ -152,7 +152,10 @@ productCord, product_url = extract_id(shop_type, url_shop)
 print('id 추출성공: ',productCord)
 print('url 추출성공: ',product_url)
 if productCord =="":
-    print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. 추출된 코드가 없음.'+Fore.RESET+'\n')
+    print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. \n타오바오는 "taobao", 1688은 "shop1688"이라고 입력하셔야 합니다.'+Fore.RESET+'\n')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
 
 else:
     print('사아트: '+ shop_type)
@@ -841,7 +844,7 @@ try:
         
         time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
-        print(str(optionNum)+'번 옵션 이미지 다운로드 성공')
+        print(Fore.GREEN + str(optionNum)+'번 옵션 이미지 다운로드 성공'+Fore.RESET)
         optionNum +=1
         
     # 상세 이미지 다운로드
@@ -853,7 +856,8 @@ try:
 
 except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.')
-    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    print(Fore.RESET + str(optionNum)+'번 상세 이미지주소: ',i)
+    print("엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
 
@@ -862,18 +866,29 @@ try:
     for i in modUrls: 
         file_ext = i.split('.')[-1] # 확장자 추출
         path = pathDesc + '/' + productCord + '_desc_' + str(descimgNum)+'.' + file_ext
-        random_number = round(random.uniform(0.02, 0.2), 2)
+        random_number = round(random.uniform(0.02, 0.3), 2)
         
         time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
-        print(str(descimgNum)+'번 상세 이미지 다운로드 성공')
+        print(Fore.GREEN +  str(descimgNum)+'번 상세 이미지 다운로드 성공' + Fore.RESET)
         descimgNum +=1
 
 except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 해외쇼핑몰 로그인이 필요하거나 올바른 상세 url이 아닙니다.')
+    print(str(descimgNum)+'번 오류 상세 이미지주소: ',i)
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
+except urllib.error.URLError:
+    print(Fore.RED + '오류 - 올바른 상세 url이 아닙니다.')
+    print('오류 있는 '+str(descimgNum)+'번째 상세 이미지 주소: ',i,'\n(url을 콘트롤키+클릭하면 브라우저에서 오픈합니다.)\n')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
+
+
+
+    
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
