@@ -113,14 +113,15 @@ point_photoReview = set_list[14]    #포토/동영상 리뷰 작성시 지급 �
 point_monthText = set_list[15]  #한달사용 텍스트리뷰 작성시 지급 포인트
 point_monthVideo = set_list[16] #한달사용 포토/동영상리뷰 작성시 지급 포인트
 point_talktalk = set_list[17]   #톡톡친구/스토어찜고객 리뷰 작성시 지급 포인트
-rate = float(set_list[18]) #환율
-fomul = float(set_list[19])    #가격조정값
-fee_naver = float(set_list[20])    #네이버수수료
-marginMin = int(set_list[21])    #최소마진
-naver_top = set_list[22]    #스스 상세페이지에 삽입되는 상단이미지
-naver_bottom = set_list[23] #스스 상세페이지에 삽입되는 하단이미지
-naver_bottom2 = set_list[24] #스스 상세페이지에 삽입되는 하단이미지 2
-addDescBool = set_list[25]  #개인 상세페이지 상,하단 이미지 사용 유무
+rate_CNY = float(set_list[18]) #환율CNY
+rate_USD = float(set_list[19]) #환율USD
+fomul = float(set_list[20])    #가격조정값
+fee_naver = float(set_list[21])    #네이버수수료
+marginMin = int(set_list[22])    #최소마진
+naver_top = set_list[23]    #스스 상세페이지에 삽입되는 상단이미지
+naver_bottom = set_list[24] #스스 상세페이지에 삽입되는 하단이미지
+naver_bottom2 = set_list[25] #스스 상세페이지에 삽입되는 하단이미지 2
+addDescBool = set_list[26]  #개인 상세페이지 상,하단 이미지 사용 유무
 
 #계산이 필요한 금액은 숫자형으로 변경
 
@@ -143,6 +144,18 @@ def extract_id(site, url):
         product_url = "https://detail.1688.com/offer/" + product_id + ".html"
         return product_id, product_url
     
+    elif site == 'vvic':
+        file_name = os.path.splitext(os.path.basename(parsed_url.path))[0]
+        product_id = file_name.split("_")[-1]
+        product_url = "https://www.vvic.com/item/" + product_id
+        return product_id, product_url
+    
+    elif site == 'aliexpress':
+        file_name = os.path.splitext(os.path.basename(parsed_url.path))[0]
+        product_id = file_name.split("_")[-1]
+        product_url = "https://ko.aliexpress.com/item/" + product_id + ".html"
+        return product_id, product_url
+    
     else:
         return "", ""
 
@@ -152,13 +165,13 @@ productCord, product_url = extract_id(shop_type, url_shop)
 print('id 추출성공: ',productCord)
 print('url 추출성공: ',product_url)
 if productCord =="":
-    print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. \n타오바오는 "taobao", 1688은 "shop1688"이라고 입력하셔야 합니다.'+Fore.RESET+'\n')
+    print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. \n예) 타오바오는 "taobao", 1688은 "shop1688"이라고 입력하셔야 합니다.'+Fore.RESET+'\n')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
 
 else:
-    print('사아트: '+ shop_type)
+    print('사이트: '+ shop_type)
     print('제품코드 추출성공: ' + productCord)
     
 # 엑셀 기입용 제품코드
@@ -210,7 +223,6 @@ elif colcount == 1:
     optionN1 = gooddf[0]
 
 # 옵션에 관련된 데이터 열을 다 추출하여 계산에 사용함
-
 df_optiongoods = df.iloc[0:,5:11]
 df_optiongoods.replace('', np.nan, inplace=True)
 
@@ -222,27 +234,36 @@ optionColcnt = len(goods_clear.columns)
 
 optionT1 = []
 optionT2 = []
-optionT3 = []
 
 if optionColcnt == 6:
     optionT1 = option_gooddf[0]
     optionT2 = option_gooddf[1]
-    optionT3 = option_gooddf[2]
-
 
 elif optionColcnt == 5:
     optionT1 = option_gooddf[0]
-    optionT2 = option_gooddf[1]
 
-elif optionColcnt == 4:
-    optionT1 = option_gooddf[0]
+# 결제 통화 셋팅
+currency_type = df['결제통화'][0]
+rate = 1
+payment_fee = 1
+
+if currency_type =='CNY':
+    rate = rate_CNY
+    Payment_fee = 1.03
+
+elif currency_type =='USD':
+    rate = rate_USD
+
+else:
+    pass
 
 # ### 기본 판매가 계산(옵션별 판매가격 계산)
 # * 구매원가 = (상품가(상품가*수수료*환율)+배송비) prime_cost
 # * 기본판매가 = 구매원가*가중치 price_min
 # * 마진 = 기본가-스토어수수료-상품가-배송비 
 # * 마진율 = 마진금액/기본가
-goods_clear['구매원가'] = round(goods_clear['위안화']*1.03*int(rate)+goods_clear['실제배송비'],-2)
+
+goods_clear['구매원가'] = round(goods_clear['물건가격'] * payment_fee * int(rate) + goods_clear['실제배송비'],-2)
 goods_clear['기본판매가'] = round(goods_clear['구매원가']*fomul,-2)
 prime_cost = goods_clear['구매원가'].min()
 
@@ -322,7 +343,7 @@ optionPrice = ""
 deff_list = []
 zerodeff_list = []
 
-if optionColcnt == 5:
+if optionColcnt == 6:
     df_gcprice = df_gc.drop_duplicates(subset=optionT1,ignore_index=False)
     df_subset1 = df_gcprice['옵션차액'].drop_duplicates()
     dupPriceCnt1 = df_subset1.value_counts().sum(axis=0)
@@ -371,7 +392,7 @@ if optionColcnt == 5:
     else:
         print('옵션의 가격이 모두 동일합니다.')
 
-elif optionColcnt == 4:
+elif optionColcnt == 5:
     df_option1 = df_gc[optionT1].drop_duplicates()  # 첫번째 필드의 데이터들을 프레임에 담는다.
 
     # 일단 같은 옵션명과 금액을 가진 놈들을 뽑아 중복제거 후 리스트에 담는다.
@@ -395,19 +416,7 @@ print('옵션 작성 완료!')
 
 if optionColcnt == 6:
     df_option1 = goods_clear[optionT1].drop_duplicates()
-    df_option2 = goods_clear[optionT2].drop_duplicates()
-    df_option3 = goods_clear[optionT3].drop_duplicates()
-    list_option1 = df_option1.values.tolist()#담겨진 데이터들 중 중복 삭제하고 유일한 값들만 모아서 프레임에 저장
-    list_option2 = df_option2.values.tolist()
-    list_option3 = df_option3.values.tolist()
-
-    optionDesc1 = ",".join(map(str,list_option1))
-    optionDesc2 = ",".join(map(str,list_option2))
-    optionDesc3 = ",".join(map(str,list_option3))
-    optionValue = optionDesc1 + '\n' + optionDesc2 + '\n' + optionDesc3
-
-elif optionColcnt == 5:
-    df_option1 = goods_clear[optionT1].drop_duplicates()
+    
     df_option2 = goods_clear[optionT2].drop_duplicates()
     list_option1 = df_option1.values.tolist()  # 담겨진 데이터들 중 중복 삭제하고 유일한 값들만 모아서 프레임에 저장
     list_option2 = df_option2.values.tolist()
@@ -415,7 +424,7 @@ elif optionColcnt == 5:
     optionDesc2 = ",".join(map(str,list_option2))
     optionValue = optionDesc1 + '\n' + optionDesc2
 
-elif optionColcnt == 4:
+elif optionColcnt == 5:
     df_option1 = goods_clear[optionT1].drop_duplicates()
     list_option1 = df_option1.values.tolist()
     optionDesc1 = ",".join(map(str,list_option1))
@@ -425,6 +434,7 @@ elif optionColcnt == 4:
     df_OpDescTitle = txtOption1
 
 #상세페이지 작성
+
 try:
     dpHtml = df['상세페이지']
     dpHtml_list = list(dpHtml)
@@ -448,7 +458,7 @@ naverBottom2 = '<div align="center"><img src="' + naver_bottom2 + '"/></div>'+'\
 #shop11stBottom = '<img src="' + shop11st_bottom + '"/>'+'\n'
 
 try:
-    df_opurl = df.iloc[0:,4:6]
+    df_opurl = df.iloc[0:,4:7]
     df_filter = df_opurl.drop_duplicates(subset=optionT1,ignore_index=False)
     img_option = df_filter['옵션이미지']
     img_optionTag = img_option.str.replace('<img src="','')
@@ -675,23 +685,25 @@ ws["BT2"].value = " "
 ws["BU2"].value = " "
 ws["BV2"].value = nickName # 작성자
 ws["BW2"].value = tday_f # 소싱일
-ws["BX2"].value = writePdCord
-ws["BY2"].value = pName
-ws["BZ2"].value = product_url
-ws["CA2"].value = goods_clear['위안화'].min()
-ws["CB2"].value =rate
-ws["CC2"].value = goods_clear['실제배송비'].min()
-ws["CD2"].value = round(prime_cost,-2)
-ws["CE2"].value = round(tune_marginPrice,-2)
-ws["CF2"].value = round(tuneMargin,1)
-ws["CG2"].value = round(tuneMarginRate,1)
-ws["CH2"].value = fomul
-ws["CI2"].value = marginMin
-ws["CJ2"].value = categori_num
-ws["Ck2"].value = strCalevel1
-ws["CL2"].value = strCalevel2
-ws["CM2"].value = strCalevel3
-ws["CN2"].value = strCalevel4
+ws["BX2"].value = shop_type #소싱사이트
+ws["By2"].value = writePdCord #판매자상품코드
+ws["Bz2"].value = pName #제품명
+ws["CA2"].value = product_url #제품URL
+ws["CB2"].value = goods_clear['물건가격'].min()
+ws["CC2"].value = rate #적용환율
+ws["CD2"].value = currency_type #결제통화
+ws["CE2"].value = goods_clear['실제배송비'].min()
+ws["CF2"].value = round(prime_cost,-2)
+ws["CG2"].value = round(tune_marginPrice,-2)
+ws["CH2"].value = round(tuneMargin,1)
+ws["CI2"].value = round(tuneMarginRate,1)
+ws["CJ2"].value = fomul
+ws["CK2"].value = marginMin
+ws["CL2"].value = categori_num
+ws["CM2"].value = strCalevel1
+ws["CN2"].value = strCalevel2
+ws["CO2"].value = strCalevel3
+ws["CP2"].value = strCalevel4
 
 new_fileName = ('./excel/'+productCord+'_'+'개인용'+'_'+tday_s+'.xlsx')
 wb.save(new_fileName)
@@ -783,24 +795,25 @@ p_ws["BT2"].value = " "
 p_ws["BU2"].value = " "
 p_ws["BV2"].value = nickName # 작성자
 p_ws["BW2"].value = tday_f # 소싱일
-p_ws["BX2"].value = writePdCord
-p_ws["BY2"].value = pName
-p_ws["BZ2"].value = product_url
-p_ws["CA2"].value = goods_clear['위안화'].min()
-p_ws["CB2"].value =rate
-p_ws["CC2"].value = goods_clear['실제배송비'].min()
-p_ws["CD2"].value = round(prime_cost,-2)
-p_ws["CE2"].value = round(tune_marginPrice,-2)
-p_ws["CF2"].value = round(tuneMargin,1)
-p_ws["CG2"].value = round(tuneMarginRate,1)
-p_ws["CH2"].value = fomul
-p_ws["CI2"].value = marginMin
-p_ws["CJ2"].value = categori_num
-p_ws["Ck2"].value = strCalevel1
-p_ws["CL2"].value = strCalevel2
-p_ws["CM2"].value = strCalevel3
-p_ws["CN2"].value = strCalevel4
-
+p_ws["BX2"].value = shop_type #소싱사이트
+p_ws["By2"].value = writePdCord #판매자상품코드
+p_ws["Bz2"].value = pName #제품명
+p_ws["CA2"].value = product_url #제품URL
+p_ws["CB2"].value = goods_clear['물건가격'].min()
+p_ws["CC2"].value = rate #적용환율
+p_ws["CD2"].value = currency_type #결제통화
+p_ws["CE2"].value = goods_clear['실제배송비'].min()
+p_ws["CF2"].value = round(prime_cost,-2)
+p_ws["CG2"].value = round(tune_marginPrice,-2)
+p_ws["CH2"].value = round(tuneMargin,1)
+p_ws["CI2"].value = round(tuneMarginRate,1)
+p_ws["CJ2"].value = fomul
+p_ws["CK2"].value = marginMin
+p_ws["CL2"].value = categori_num
+p_ws["CM2"].value = strCalevel1
+p_ws["CN2"].value = strCalevel2
+p_ws["CO2"].value = strCalevel3
+p_ws["CP2"].value = strCalevel4
 
 new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
@@ -861,7 +874,6 @@ except urllib.error.HTTPError:
     aInput = input("")
     sys.exit()
 
-
 try:    
     for i in modUrls: 
         file_ext = i.split('.')[-1] # 확장자 추출
@@ -879,6 +891,7 @@ except urllib.error.HTTPError:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
+    
 except urllib.error.URLError:
     print(Fore.RED + '오류 - 올바른 상세 url이 아닙니다.')
     print('오류 있는 '+str(descimgNum)+'번째 상세 이미지 주소: ',i,'\n(url을 콘트롤키+클릭하면 브라우저에서 오픈합니다.)\n')
@@ -886,9 +899,6 @@ except urllib.error.URLError:
     aInput = input("")
     sys.exit()
 
-
-
-    
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
 fVideoUrl.close()
