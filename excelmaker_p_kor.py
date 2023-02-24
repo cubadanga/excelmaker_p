@@ -117,9 +117,9 @@ rate_USD = float(set_list[19]) #환율USD
 fomul = float(set_list[20])    #가격조정값
 fee_naver = float(set_list[21])    #네이버수수료
 marginMin = int(set_list[22])    #최소마진
-naver_top = set_list[23]    #스스 상세페이지에 삽입되는 상단이미지
-naver_bottom = set_list[24] #스스 상세페이지에 삽입되는 하단이미지
-naver_bottom2 = set_list[25] #스스 상세페이지에 삽입되는 하단이미지 2
+naver_top = str(set_list[23])    #스스 상세페이지에 삽입되는 상단이미지
+naver_bottom = str(set_list[24]) #스스 상세페이지에 삽입되는 하단이미지
+naver_bottom2 = str(set_list[25]) #스스 상세페이지에 삽입되는 하단이미지 2
 addDescBool = set_list[26]  #개인 상세페이지 상,하단 이미지 사용 유무
 
 #계산이 필요한 금액은 숫자형으로 변경
@@ -249,12 +249,13 @@ payment_fee = 1
 if currency_type =='CNY':
     rate = rate_CNY
     Payment_fee = 1.03
-
+    duty = round(goods_clear['물건가격'].max() * payment_fee * int(rate)/rate_USD)
 elif currency_type =='USD':
     rate = rate_USD
-
+    duty = round(goods_clear['물건가격'].max())
 else:
-    pass
+    rate = 1
+    duty = round(goods_clear['물건가격'].max()/rate_USD)
 
 # ### 기본 판매가 계산(옵션별 판매가격 계산)
 # * 구매원가 = (상품가(상품가*수수료*환율)+배송비) prime_cost
@@ -305,9 +306,6 @@ goods_clear['옵션차액'] = round(goods_clear['기본판매가'] - price_min,-
 #할인금액 계산
 discount_price = dp_price - round(tune_marginPrice,-2)
 discount_price = np.int64(discount_price)
-print(dp_price)
-print('배송비:',rship_price)
-
 
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
 if ship_method == "유료":
@@ -392,7 +390,20 @@ if optionColcnt == 6:
 
     else:
         print('옵션의 가격이 모두 동일합니다.')
+        df_option1 = df_gc[optionT1].drop_duplicates()
+        for op in df_option1:
+            option_deff = goods_clear.loc[goods_clear[optionT2] == op]
+            intdeff = 0
+            strdeff = 0
+            deff_list.append(strdeff)
+        
+        for i in range(len(deff_list)):
+            deff_list[i] = str(deff_list[i])
+            zerodeff_list.append("0")
 
+        deff_price = str(",".join(deff_list))
+        zero_deff = str(",".join(zerodeff_list))
+        
 elif optionColcnt == 5:
     df_option1 = df_gc[optionT1].drop_duplicates()  # 첫번째 필드의 데이터들을 프레임에 담는다.
 
@@ -404,13 +415,14 @@ elif optionColcnt == 5:
         intdeff = option_deff['옵션차액'].drop_duplicates()
         strdeff = np.int64(intdeff.min())
         deff_list.append(strdeff)
+        
     # join 함수를 사용할 때는 리스트 내의 인자들이 모두 string 형태여야 한다. 그러니깐.
     # 구성요소 들을 for문으로 돌면서 스트링으로 바꿔준 다음 join으로 합친다.
     for i in range(len(deff_list)):
         deff_list[i] = str(deff_list[i])
     deff_price = str(",".join(deff_list))
     optionPrice = deff_price
-
+    
 # 네이버가 요구하는 양식으로 데이터를 편집하여 스트링으로 저장
 
 print('옵션 작성 완료!')
@@ -434,7 +446,29 @@ elif optionColcnt == 5:
     txtOption1 = df_gc[optionT1].drop_duplicates()
     df_OpDescTitle = txtOption1
 
-#상세페이지 작성
+
+# 메모란에 경고 메시지를 찍어 줄 것임.
+
+warningMemoList = []
+warningMemo =""
+errorPrice = goods_clear['옵션차액'].max()
+
+if duty >=150:
+    warningMemoList.append( '*옵션에 관부가세 대상이 되는 $150이상 품목이 있습니다. 소싱 금액을 점검하세요.\n')
+    print(Fore.YELLOW+ '메모란 확인 - $150이상 품목있음. 관부가세주의'+Fore.RESET)
+else:
+    pass
+
+if errorPrice * 2 >= dp_price:
+    warningMemoList.append('* 판매가의 50%가 넘는 옵션이 존재합니다.\n판매가를 더 높이지 않으면 스스업로드시 오류가 발생할 것입니다.')
+    print(Fore.YELLOW + '메모란 확인 - 50%가 넘는 옵션 존재. 옵션가격 확인'+Fore.RESET)
+else:
+    pass
+
+warningMemo = str("\n".join(warningMemoList))
+
+
+#상세페이지 작성 시작
 
 try:
     dpHtml = df['상세페이지']
@@ -684,27 +718,29 @@ ws["BR2"].value = " "
 ws["BS2"].value = " "
 ws["BT2"].value = " "
 ws["BU2"].value = " "
-ws["BV2"].value = nickName # 작성자
-ws["BW2"].value = tday_f # 소싱일
-ws["BX2"].value = shop_type #소싱사이트
-ws["By2"].value = writePdCord #판매자상품코드
-ws["Bz2"].value = pName #제품명
-ws["CA2"].value = product_url #제품URL
-ws["CB2"].value = goods_clear['물건가격'].min()
-ws["CC2"].value = rate #적용환율
-ws["CD2"].value = currency_type #결제통화
-ws["CE2"].value = goods_clear['실제배송비'].min()
-ws["CF2"].value = round(prime_cost,-2)
-ws["CG2"].value = round(tune_marginPrice,-2)
-ws["CH2"].value = round(tuneMargin,1)
-ws["CI2"].value = round(tuneMarginRate,1)
-ws["CJ2"].value = fomul
-ws["CK2"].value = marginMin
-ws["CL2"].value = categori_num
-ws["CM2"].value = strCalevel1
-ws["CN2"].value = strCalevel2
-ws["CO2"].value = strCalevel3
-ws["CP2"].value = strCalevel4
+ws["BV2"].value = warningMemo
+ws["BV2"].font = Font(color="FF0000")
+ws["BW2"].value = nickName # 작성자
+ws["BX2"].value = tday_f # 소싱일
+ws["By2"].value = shop_type #소싱사이트
+ws["Bz2"].value = writePdCord #판매자상품코드
+ws["CA2"].value = pName #제품명
+ws["CB2"].value = product_url #제품URL
+ws["CC2"].value = goods_clear['물건가격'].min()
+ws["CD2"].value = rate #적용환율
+ws["CE2"].value = currency_type #결제통화
+ws["CF2"].value = goods_clear['실제배송비'].min()
+ws["CG2"].value = round(prime_cost,-2)
+ws["CH2"].value = round(tune_marginPrice,-2)
+ws["CI2"].value = round(tuneMargin,1)
+ws["CJ2"].value = round(tuneMarginRate,1)
+ws["CK2"].value = fomul
+ws["CL2"].value = marginMin
+ws["CM2"].value = categori_num
+ws["CN2"].value = strCalevel1
+ws["CO2"].value = strCalevel2
+ws["CP2"].value = strCalevel3
+ws["CQ2"].value = strCalevel4
 
 new_fileName = ('./excel/'+productCord+'_'+'개인용'+'_'+tday_s+'.xlsx')
 wb.save(new_fileName)
@@ -794,28 +830,30 @@ p_ws["BR2"].value = " "
 p_ws["BS2"].value = " "
 p_ws["BT2"].value = " "
 p_ws["BU2"].value = " "
-p_ws["BV2"].value = nickName # 작성자
-p_ws["BW2"].value = tday_f # 소싱일
-p_ws["BX2"].value = shop_type #소싱사이트
-p_ws["By2"].value = writePdCord #판매자상품코드
-p_ws["Bz2"].value = pName #제품명
-p_ws["CA2"].value = product_url #제품URL
-p_ws["CB2"].value = goods_clear['물건가격'].min()
-p_ws["CC2"].value = rate #적용환율
-p_ws["CD2"].value = currency_type #결제통화
-p_ws["CE2"].value = goods_clear['실제배송비'].min()
-p_ws["CF2"].value = round(prime_cost,-2)
-p_ws["CG2"].value = round(tune_marginPrice,-2)
-p_ws["CH2"].value = round(tuneMargin,1)
-p_ws["CI2"].value = round(tuneMarginRate,1)
-p_ws["CJ2"].value = fomul
-p_ws["CK2"].value = marginMin
-p_ws["CL2"].value = categori_num
-p_ws["CM2"].value = strCalevel1
-p_ws["CN2"].value = strCalevel2
-p_ws["CO2"].value = strCalevel3
-p_ws["CP2"].value = strCalevel4
+p_ws["BV2"].value = warningMemo
+p_ws["BV2"].font = Font(color="FF0000")
 
+p_ws["BW2"].value = nickName # 작성자
+p_ws["BX2"].value = tday_f # 소싱일
+p_ws["By2"].value = shop_type #소싱사이트
+p_ws["Bz2"].value = writePdCord #판매자상품코드
+p_ws["CA2"].value = pName #제품명
+p_ws["CB2"].value = product_url #제품URL
+p_ws["CC2"].value = goods_clear['물건가격'].min()
+p_ws["CD2"].value = rate #적용환율
+p_ws["CE2"].value = currency_type #결제통화
+p_ws["CF2"].value = goods_clear['실제배송비'].min()
+p_ws["CG2"].value = round(prime_cost,-2)
+p_ws["CH2"].value = round(tune_marginPrice,-2)
+p_ws["CI2"].value = round(tuneMargin,1)
+p_ws["CJ2"].value = round(tuneMarginRate,1)
+p_ws["CK2"].value = fomul
+p_ws["CL2"].value = marginMin
+p_ws["CM2"].value = categori_num
+p_ws["CN2"].value = strCalevel1
+p_ws["CO2"].value = strCalevel2
+p_ws["CP2"].value = strCalevel3
+p_ws["CQ2"].value = strCalevel4
 new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
 print("배포용파일 작성완료!")
