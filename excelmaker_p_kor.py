@@ -1,8 +1,7 @@
 
 import pandas as pd
 import openpyxl
-from  openpyxl.styles  import  Alignment
-from  openpyxl.styles.fonts  import  Font
+from  openpyxl.styles  import  Font, Side, Border, Alignment
 import numpy as np
 import random
 import re
@@ -103,7 +102,7 @@ brand_info = set_list[4]    #브랜드
 discount_rate = float(set_list[5]) #표시 될 할인율
 ship_method = set_list[6]   #배송비유형
 qt_charge = set_list[7]     #수량별부과-수량
-rship_price = set_list[8]   #기본배송비
+rship_price = int(set_list[8])   #기본배송비
 check_method = set_list[9]  #배송비 결제방식
 refund_ship = set_list[10]   #반품배송비
 exchange_ship = set_list[11] #교환배송비
@@ -299,13 +298,15 @@ tune_marginPrice = basePrice + price_correction
 
 # 표시 판매가 계산
 dp_price = round(tune_marginPrice / (1-discount_rate/100),-2)
-
+dp_price = np.int64(dp_price)
 
 goods_clear['옵션차액'] = round(goods_clear['기본판매가'] - price_min,-2)
 
 #할인금액 계산
 discount_price = dp_price - round(tune_marginPrice,-2)
 discount_price = np.int64(discount_price)
+print(dp_price)
+print('배송비:',rship_price)
 
 
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
@@ -441,7 +442,7 @@ try:
     preDescPages = dpHtml_list[0]
     descPages2 = re.sub("img referrerpolicy='no-referrer'|{LINK}|", "", preDescPages)
     descPages1 = re.sub("< ", "<", descPages2)+'\n'
-    descPages = '<div align="center">' + descPages1 + '</div>'
+    descPages = '<div align="center"><!-- 상세페이지 수정은 여기서부터 -->' + descPages1 + '<!-- 상세페이지 수정은 여기까지 --></div>'
 
 except TypeError:
     print(Fore.RED + '오류 - product.xlsx->상세페이지 필드에 url이 없거나 잘못 되었습니다.')
@@ -451,9 +452,9 @@ except TypeError:
     
 
 descPname = '<br><br><h1 style="text-align: center;"><strong>' + pName + "</strong></h1><br><br>"+'\n'
-naverTop = '<div align="center"><img src="' + naver_top + '"/></div>'+'\n'
-naverBottom = '<div align="center"><img src="' + naver_bottom + '"/></div>'+'\n'
-naverBottom2 = '<div align="center"><img src="' + naver_bottom2 + '"/></div>'+'\n'
+naverTop = '<div align="center"><!-- 여기서부터 상단 공지 이미지 --><img src="' + naver_top + '"/></div>'+'\n'
+naverBottom = '<div align="center"><!-- 여기서부터 하단 공지1 이미지 --><img src="' + naver_bottom + '"/></div>'+'\n'
+naverBottom2 = '<div align="center"><!-- 여기서부터 하단 공지2 이미지 --><img src="' + naver_bottom2 + '"/></div>'+'\n'
 #shop11Top = '<img src="' + shop11st_top + '"/>'+'\n'
 #shop11stBottom = '<img src="' + shop11st_bottom + '"/>'+'\n'
 
@@ -484,7 +485,7 @@ cntj=1
 for i in range(optionLen):
     
     try :
-        strtitle = '<div align="center"><div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
+        strtitle = '<!-- 옵션 이미지 시작 --><div align="center"><div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
         strImg = '<div align="center"><img src="'+op_imgurls[i]+'"/></div><br><br>'
         opjoin_list.append(strtitle+strImg)
         cntj += 1
@@ -496,7 +497,7 @@ for i in range(optionLen):
         sys.exit()
     
 opjoinStr = str("\n".join(opjoin_list))
-optionHtml = '<br><div align="center"><img src="https://i.ibb.co/vZpWH4Z/option-Img.png" alt="option-Img" border="0"></div><br>'+ opjoinStr
+optionHtml = '<br><div align="center"><img src="https://ai.esmplus.com/letsbuying/notice/option-Img.png" alt="option-Img" border="0"></div><br>'+ opjoinStr
 
 descNaver = ""
 desc11st = ""
@@ -904,7 +905,7 @@ fVideoUrl.write(videourl)
 fVideoUrl.close()
 
 copy_df = df
-copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+tday_s+'.xlsx', index=False)
+copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+productCord+tday_s+'.xlsx', index=False)
 
 print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
