@@ -508,6 +508,11 @@ except KeyError:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
+except AttributeError:
+    print(Fore.RED + '오류 - 옵션이미지 url이 잘못 되었을 수 있으나 그대로 다시 실행해 보세요.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
     
 OpTitle = df_filter[optionT1]
 op_titlelist = OpTitle.values.tolist()
@@ -943,7 +948,7 @@ fVideoUrl.write(videourl)
 fVideoUrl.close()
 
 copy_df = df
-copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+productCord+tday_s+'.xlsx', index=False)
+copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+productCord+'_'+tday_s+'.xlsx', index=False)
 
 print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
