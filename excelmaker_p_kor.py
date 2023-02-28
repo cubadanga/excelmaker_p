@@ -1,8 +1,15 @@
+from colorama import init, Fore
+import numpy as np
+
+np.set_printoptions(threshold=np.inf, linewidth=np.inf)
+init()
+
+print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
+print(Fore.RESET)
 
 import pandas as pd
 import openpyxl
-from  openpyxl.styles  import  Font, Side, Border, Alignment
-import numpy as np
+from  openpyxl.styles  import  Font
 import random
 import re
 import os
@@ -15,12 +22,6 @@ from urllib.request import urlopen
 from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
-from colorama import init, Fore
-np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-init()
-
-print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
-print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
@@ -91,7 +92,7 @@ except FileNotFoundError as e:
     sys.exit()
 
 #dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
-pd.set_option('display.max_columns', None)
+#pd.set_option('display.max_columns', None)
 
 set_list = list(setpd['입력값'])
 nickName = set_list[0]  #닉네임
