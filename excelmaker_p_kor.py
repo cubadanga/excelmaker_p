@@ -1,6 +1,6 @@
 from colorama import init, Fore
 import numpy as np
-
+#프린트문 색상 변경을 위해 초기화
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
 init()
 
@@ -90,10 +90,6 @@ except FileNotFoundError as e:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
-
-#dfSourcing = pd.read_excel('./excel/sourcing/sourcing.xlsx', header = 0, index_col = 0)
-#pd.set_option('display.max_columns', None)
-
 set_list = list(setpd['입력값'])
 nickName = set_list[0]  #닉네임
 as_info = set_list[1]   #as안내 내용
@@ -121,7 +117,7 @@ marginMin = int(set_list[22])    #최소마진
 naver_top = str(set_list[23])    #스스 상세페이지에 삽입되는 상단이미지
 naver_bottom = str(set_list[24]) #스스 상세페이지에 삽입되는 하단이미지
 naver_bottom2 = str(set_list[25]) #스스 상세페이지에 삽입되는 하단이미지 2
-addDescBool = set_list[26]  #개인 상세페이지 상,하단 이미지 사용 유무
+addDescBool = int(set_list[26])  #개인 상세페이지 상,하단 이미지 사용 유무
 
 #계산이 필요한 금액은 숫자형으로 변경
 
@@ -430,14 +426,12 @@ print('옵션 작성 완료!')
 
 if optionColcnt == 6:
     df_option1 = goods_clear[optionT1].drop_duplicates()
-    
     df_option2 = goods_clear[optionT2].drop_duplicates()
     list_option1 = df_option1.values.tolist()  # 담겨진 데이터들 중 중복 삭제하고 유일한 값들만 모아서 프레임에 저장
     list_option2 = df_option2.values.tolist()
     optionDesc1 = ",".join(map(str,list_option1))
     optionDesc2 = ",".join(map(str,list_option2))
     optionValue = optionDesc1 + '\n' + optionDesc2
-
 elif optionColcnt == 5:
     df_option1 = goods_clear[optionT1].drop_duplicates()
     list_option1 = df_option1.values.tolist()
@@ -446,7 +440,6 @@ elif optionColcnt == 5:
     optionPrice = deff_price  # optionPrice
     txtOption1 = df_gc[optionT1].drop_duplicates()
     df_OpDescTitle = txtOption1
-
 
 # 메모란에 경고 메시지를 찍어 줄 것임.
 
@@ -467,7 +460,6 @@ else:
     pass
 
 warningMemo = str("\n".join(warningMemoList))
-
 
 #상세페이지 작성 시작
 
@@ -545,21 +537,23 @@ p_desc = ""
 
 if addDescBool == 0:
     descNaver = naverTop + descPname + descPages + optionHtml + naverBottom + naverBottom2
-    #desc11st = shop11Top + descPname + descPages + optionHtml + shop11stBottom
     p_desc = descPname + descPages + optionHtml
     descNaver = descNaver.replace('<img src=""/>', '')
     descPN = "<div align='center'>" + descNaver + "</div>"
+    descSharing = "<div align='center'>" + p_desc + "</div>"
 
-elif addDescBool ==1:
+elif addDescBool == 1:
     descNaver = descPname + descPages + optionHtml
     #desc11st = descPname + descPages + optionHtml
     p_desc = descPname + descPages + optionHtml
     descNaver = descNaver.replace('<img src=""/>', '')
-    descPN = "<div align='center'>" + descNaver + "</div>"
+    descPN = "<div align='center'>" + p_desc + "</div>"
+    descSharing = "<div align='center'>" + p_desc + "</div>"
 
 else:
     print(Fore.RED + "오류 - 상하단 이미지 등록 여부가 잘못 입력 되었습니다." + Fore.RESET+'\n')
-
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
 
 print("상세페이지 작성 완료!")
 
@@ -768,7 +762,7 @@ p_ws["F2"].value = "as_info"
 p_ws["G2"].value = "000-000-0000"
 p_ws["H2"].value = mainImage
 p_ws["I2"].value = subImages
-p_ws["J2"].value = descPN
+p_ws["J2"].value = descSharing
 p_ws["k2"].value = writePdCord
 p_ws["L2"].value = " "
 p_ws["M2"].value = "factory_desc"
@@ -838,7 +832,6 @@ p_ws["BT2"].value = " "
 p_ws["BU2"].value = " "
 p_ws["BV2"].value = warningMemo
 p_ws["BV2"].font = Font(color="FF0000")
-
 p_ws["BW2"].value = nickName # 작성자
 p_ws["BX2"].value = tday_f # 소싱일
 p_ws["By2"].value = shop_type #소싱사이트
