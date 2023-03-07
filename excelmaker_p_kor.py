@@ -1,12 +1,5 @@
 from colorama import init, Fore
 import numpy as np
-#프린트문 색상 변경을 위해 초기화
-np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-init()
-
-print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
-print(Fore.RESET)
-
 import pandas as pd
 import openpyxl
 from  openpyxl.styles  import  Font
@@ -23,16 +16,26 @@ from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
 
+#프린트문 색상 변경을 위해 초기화
+np.set_printoptions(threshold=np.inf, linewidth=np.inf)
+init()
+
+print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
+print(Fore.RESET)
+
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
 # * 엑셀에서 setting 시트 (셋팅시트) 추출
-basedir = os.getcwd()
-ini_dir = os.path.join(basedir,'set.ini')
 
-# pc set.ini 파일의 저장된 pass워드 읽어오기
-properties = configparser.ConfigParser()
-properties.read(ini_dir)
-password = properties['DEFAULT']['UserPass']
+def loadPassword():
+    basedir = os.getcwd()
+    ini_dir = os.path.join(basedir,'set.ini')
+
+    # pc set.ini 파일의 저장된 pass워드 읽어오기
+    properties = configparser.ConfigParser()
+    properties.read(ini_dir)
+    password = properties['DEFAULT']['UserPass']
+    return password
 
 #웹에있는 password 텍스트 추출 함수
 def getPtag(url):
@@ -50,10 +53,12 @@ def getPtag(url):
     return ptag.text
 
 #관리자 패스워드가 저장된 웹페이지 url을 전달하여 getPtag 함수 실행
+password = loadPassword()
 passTag = getPtag("https://sites.google.com/view/test-exceldoc/pass")
 
 def judge(password,passTag):
     if password == passTag:
+        properties = configparser.ConfigParser()
         properties.set('DEFAULT','UserPass',password)
         with open('./set.ini','w',encoding='utf-8') as F:
             properties.write(F)
@@ -90,6 +95,7 @@ except FileNotFoundError as e:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
+    
 set_list = list(setpd['입력값'])
 nickName = set_list[0]  #닉네임
 as_info = set_list[1]   #as안내 내용
@@ -156,10 +162,9 @@ def extract_id(site, url):
         return "", ""
 
 productCord, product_url = extract_id(shop_type, url_shop)
+print(f'id 추출성공: {productCord}')
+print(f'url 추출성공: {product_url}')
 
-
-print('id 추출성공: ',productCord)
-print('url 추출성공: ',product_url)
 if productCord =="":
     print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. \n예) 타오바오는 "taobao", 1688은 "shop1688"이라고 입력하셔야 합니다.'+Fore.RESET+'\n')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
@@ -167,15 +172,15 @@ if productCord =="":
     sys.exit()
 
 else:
-    print('사이트: '+ shop_type)
-    print('제품코드 추출성공: ' + productCord)
+    print(f'사이트: {shop_type}')
+    print(f'제품코드 추출성공: {productCord}')
     
 # 엑셀 기입용 제품코드
 writePdCord = shop_type + '_' + productCord
 
 # ### 상품명 추출
 pName = df['상품명'][0]
-print('제목 추출 성공: ' + pName)
+print(f'제목 추출 성공: {pName}')
 
 # 카테고리 번호 추출
 categori = df['카테고리번호']
@@ -448,13 +453,13 @@ warningMemo =""
 errorPrice = goods_clear['옵션차액'].max()
 
 if duty >=150:
-    warningMemoList.append( '*옵션에 관부가세 대상이 되는 $150이상 품목이 있습니다. 소싱 금액을 점검하세요.\n')
+    warningMemoList.append( '* 옵션에 관부가세 대상이 되는 $150이상 품목이 있습니다. 소싱 금액을 점검하세요.\n')
     print(Fore.YELLOW+ '메모란 확인 - $150이상 품목있음. 관부가세주의'+Fore.RESET)
 else:
     pass
 
 if errorPrice * 2 >= dp_price:
-    warningMemoList.append('* 판매가의 50%가 넘는 옵션이 존재합니다.\n판매가를 더 높이지 않으면 스스업로드시 오류가 발생할 것입니다.')
+    warningMemoList.append('* 판매가의 50%가 넘는 옵션이 존재합니다.\n판매가를 더 높이지 않으면 스스 업로드 시 오류가 발생 할 것 입니다.')
     print(Fore.YELLOW + '메모란 확인 - 50%가 넘는 옵션 존재. 옵션가격 확인'+Fore.RESET)
 else:
     pass
