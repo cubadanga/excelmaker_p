@@ -19,13 +19,13 @@ from bs4 import BeautifulSoup
 #프린트문 색상 변경을 위해 초기화
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
 init()
-
 print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
 print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
 # * 엑셀에서 setting 시트 (셋팅시트) 추출
+
 
 def loadPassword():
     basedir = os.getcwd()
@@ -121,9 +121,10 @@ fomul = float(set_list[20])    #가격조정값
 fee_naver = float(set_list[21])    #네이버수수료
 marginMin = int(set_list[22])    #최소마진
 naver_top = str(set_list[23])    #스스 상세페이지에 삽입되는 상단이미지
-naver_bottom = str(set_list[24]) #스스 상세페이지에 삽입되는 하단이미지
+naver_bottom = str(set_list[24]) #스스 상세페이지에 삽입되는 하단이미지 1
 naver_bottom2 = str(set_list[25]) #스스 상세페이지에 삽입되는 하단이미지 2
 addDescBool = int(set_list[26])  #개인 상세페이지 상,하단 이미지 사용 유무
+opImg_position = int(set_list[27]) #옵션이미지 위치
 
 #계산이 필요한 금액은 숫자형으로 변경
 
@@ -162,8 +163,6 @@ def extract_id(site, url):
         return "", ""
 
 productCord, product_url = extract_id(shop_type, url_shop)
-print(f'id 추출성공: {productCord}')
-print(f'url 추출성공: {product_url}')
 
 if productCord =="":
     print(Fore.RED + '오류 - 입력한 주소가 해당 쇼핑몰의 주소인지 확인하세요. \n예) 타오바오는 "taobao", 1688은 "shop1688"이라고 입력하셔야 합니다.'+Fore.RESET+'\n')
@@ -172,15 +171,16 @@ if productCord =="":
     sys.exit()
 
 else:
-    print(f'사이트: {shop_type}')
-    print(f'제품코드 추출성공: {productCord}')
+    print(f'입력 사이트: [{shop_type}]')
+    print(f'url 추출성공: [{product_url}]')
+    print(f'제품코드 추출성공: [{productCord}]')
     
 # 엑셀 기입용 제품코드
 writePdCord = shop_type + '_' + productCord
 
 # ### 상품명 추출
 pName = df['상품명'][0]
-print(f'제목 추출 성공: {pName}')
+print(f'제목 추출 성공: [{pName}]')
 
 # 카테고리 번호 추출
 categori = df['카테고리번호']
@@ -258,6 +258,8 @@ elif currency_type =='USD':
 else:
     rate = 1
     duty = round(goods_clear['물건가격'].max()/rate_USD)
+    
+
 
 # ### 기본 판매가 계산(옵션별 판매가격 계산)
 # * 구매원가 = (상품가(상품가*수수료*환율)+배송비) prime_cost
@@ -309,6 +311,22 @@ goods_clear['옵션차액'] = round(goods_clear['기본판매가'] - price_min,-
 discount_price = dp_price - round(tune_marginPrice,-2)
 discount_price = np.int64(discount_price)
 
+# 메모란에 경고 메시지를 찍어 줄 것임.
+
+warningMemoList = []
+warningMemo =""
+
+# 옵션차액이 판매가의 50%를 넘을 경우 판매가를 재 조정한다.
+
+if goods_clear['옵션차액'].max() >= dp_price/2:
+    errorCorrectionPrice = np.int64(round(goods_clear['옵션차액'].max() *2 - dp_price/2,-2))
+    dp_price = dp_price + errorCorrectionPrice
+    discount_price = discount_price + errorCorrectionPrice
+    warningMemoList.append(f'* 옵션차액은 판매가의 50%가 넘을 수 없습니다. 업로드 오류 방지를 위해 판매가와 할인가를 조정했습니다.\n* 실제 고객결제금액 및 마진과는 상관없음\n* [보정금액: {errorCorrectionPrice}원]')
+    print(Fore.YELLOW + '엑셀 시트의 메모란 확인 - 옵션차액이 50%가 넘는 옵션이 존재하여 판매가와 할인가를 조정하였습니다.'+Fore.RESET)
+else:
+    pass
+
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
 if ship_method == "유료":
     finalPrice = dp_price-rship_price
@@ -318,10 +336,19 @@ else:
     finalPrice = dp_price
     finalPrice = np.int64(round(finalPrice,-2))
 
-print('가격계산 완료!')
-
 tuneMargin = round(tune_marginPrice-goods_clear['구매원가'].min()-(tune_marginPrice*fee_naver/100),-2)
 tuneMarginRate = round(tuneMargin/tune_marginPrice*100,0)
+
+if duty >=150:
+    warningMemoList.append( '* 옵션에 관부가세 대상이 되는 $150이상 품목이 있습니다. 소싱 금액을 점검하세요.\n')
+    print(Fore.YELLOW+ '메모란 확인 - $150이상 품목있음. 관부가세주의'+Fore.RESET)
+else:
+    pass
+
+warningMemo = str("\n".join(warningMemoList))
+
+print('판매 가격 계산 완료!')
+
 
 # ### 옵션항목 뽑기
 option_list1 = []
@@ -354,7 +381,7 @@ if optionColcnt == 6:
     dupPriceCnt2 = df_subset2.value_counts().sum(axis=0)
 
     if dupPriceCnt1 >= 2:
-        print('"첫번째 옵션이 가격을 결정합니다."')
+        print("'첫번째 옵션이 가격을 결정합니다.'")
         df_option1 = df_gc[optionT1].drop_duplicates()
                 
         for op in df_option1:
@@ -427,8 +454,6 @@ elif optionColcnt == 5:
     
 # 네이버가 요구하는 양식으로 데이터를 편집하여 스트링으로 저장
 
-print('옵션 작성 완료!')
-
 if optionColcnt == 6:
     df_option1 = goods_clear[optionT1].drop_duplicates()
     df_option2 = goods_clear[optionT2].drop_duplicates()
@@ -446,25 +471,7 @@ elif optionColcnt == 5:
     txtOption1 = df_gc[optionT1].drop_duplicates()
     df_OpDescTitle = txtOption1
 
-# 메모란에 경고 메시지를 찍어 줄 것임.
-
-warningMemoList = []
-warningMemo =""
-errorPrice = goods_clear['옵션차액'].max()
-
-if duty >=150:
-    warningMemoList.append( '* 옵션에 관부가세 대상이 되는 $150이상 품목이 있습니다. 소싱 금액을 점검하세요.\n')
-    print(Fore.YELLOW+ '메모란 확인 - $150이상 품목있음. 관부가세주의'+Fore.RESET)
-else:
-    pass
-
-if errorPrice * 2 >= dp_price:
-    warningMemoList.append('* 판매가의 50%가 넘는 옵션이 존재합니다.\n판매가를 더 높이지 않으면 스스 업로드 시 오류가 발생 할 것 입니다.')
-    print(Fore.YELLOW + '메모란 확인 - 50%가 넘는 옵션 존재. 옵션가격 확인'+Fore.RESET)
-else:
-    pass
-
-warningMemo = str("\n".join(warningMemoList))
+print('옵션 작성 완료!')
 
 #상세페이지 작성 시작
 
@@ -522,7 +529,7 @@ cntj=1
 for i in range(optionLen):
     
     try :
-        strtitle = '<!-- 옵션 이미지 시작 --><div align="center"><div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
+        strtitle = '<div><h2><strong>옵션'+str(cntj)+'. '+ op_titlelist[i]+'</strong></h2></div>'
         strImg = '<div align="center"><img src="'+op_imgurls[i]+'"/></div><br><br>'
         opjoin_list.append(strtitle+strImg)
         cntj += 1
@@ -534,23 +541,31 @@ for i in range(optionLen):
         sys.exit()
     
 opjoinStr = str("\n".join(opjoin_list))
-optionHtml = '<br><div align="center"><img src="https://ai.esmplus.com/letsbuying/notice/option-Img.png" alt="option-Img" border="0"></div><br>'+ opjoinStr
+optionHtml = '<br><!-- 옵션 이미지 시작 --><div align="center"><div align="center"><img src="https://ai.esmplus.com/letsbuying/notice/option-Img.png" alt="option-Img" border="0"></div><br>' + opjoinStr + '<!-- 옵션 이미지 끝 -->'
 
 descNaver = ""
 desc11st = ""
 p_desc = ""
 
 if addDescBool == 0:
-    descNaver = naverTop + descPname + descPages + optionHtml + naverBottom + naverBottom2
-    p_desc = descPname + descPages + optionHtml
+    if opImg_position == 0:
+        descNaver = naverTop + descPname + descPages + optionHtml + naverBottom + naverBottom2
+        p_desc = descPname + descPages + optionHtml
+    elif opImg_position == 1:
+        descNaver = naverTop + descPname + optionHtml + descPages + naverBottom + naverBottom2
+        p_desc = descPname + optionHtml + descPages
     descNaver = descNaver.replace('<img src=""/>', '')
     descPN = "<div align='center'>" + descNaver + "</div>"
     descSharing = "<div align='center'>" + p_desc + "</div>"
 
 elif addDescBool == 1:
-    descNaver = descPname + descPages + optionHtml
-    #desc11st = descPname + descPages + optionHtml
-    p_desc = descPname + descPages + optionHtml
+    if opImg_position == 0:
+        descNaver = descPname + descPages + optionHtml
+        p_desc = descPname + descPages + optionHtml
+    elif opImg_position == 1:
+        descNaver = descPname + optionHtml + descPages
+        p_desc = descPname + optionHtml + descPages
+        
     descNaver = descNaver.replace('<img src=""/>', '')
     descPN = "<div align='center'>" + p_desc + "</div>"
     descSharing = "<div align='center'>" + p_desc + "</div>"
