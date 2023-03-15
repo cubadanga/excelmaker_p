@@ -63,7 +63,7 @@ def judge(password,passTag):
         with open('./set.ini','w',encoding='utf-8') as F:
             properties.write(F)
                 
-        print("이번 달 패스워드 체크 OK! 오늘도 파이팅!")
+        print("이번 달 패스워드 확인 완료! 오늘도 파이팅!")
         pass
     else:
         print(Fore.RED + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다. 패스워드는 단체방 금월 암호 공지를 확인하세요."+Fore.RESET+'\n')
@@ -171,16 +171,16 @@ if productCord =="":
     sys.exit()
 
 else:
-    print(f'입력 사이트: [{shop_type}]')
-    print(f'url 추출성공: [{product_url}]')
-    print(f'제품코드 추출성공: [{productCord}]')
+    print(f'1. 입력 사이트: [{shop_type}]')
+    print(f'2. 사이트 url 추출성공: [{product_url}]')
+    print(f'3. 제품코드 추출성공: [{productCord}]')
     
 # 엑셀 기입용 제품코드
 writePdCord = shop_type + '_' + productCord
 
 # ### 상품명 추출
 pName = df['상품명'][0]
-print(f'제목 추출 성공: [{pName}]')
+print(f'4. 제목 추출 성공: [{pName}]')
 
 # 카테고리 번호 추출
 categori = df['카테고리번호']
@@ -198,10 +198,10 @@ videourl = str(df['동영상url'][0])
 
 if videourl == 'nan':
     videourl = '동영상이 없습니다.'
-    print('동영상 url은 없었습니다.')
+    print('5. 동영상 url은 없었습니다.')
     
 else:
-    print('동영상 url 복사완료!')
+    print('5. 동영상 url 복사완료!')
 
 # ### 옵션명 제작
 # * price 시트의 옵션명이 적혀있는 3개 행의 필드명을 추출하여 ','으로 구분하여 합친다.
@@ -267,12 +267,12 @@ else:
 # * 마진 = 기본가-스토어수수료-상품가-배송비 
 # * 마진율 = 마진금액/기본가
 
-goods_clear['구매원가'] = round(goods_clear['물건가격'] * payment_fee * int(rate) + goods_clear['실제배송비'],-2)
-goods_clear['기본판매가'] = round(goods_clear['구매원가']*fomul,-2)
-prime_cost = goods_clear['구매원가'].min()
+goods_clear['구매원가'] = goods_clear['물건가격'] * payment_fee * int(rate) + goods_clear['실제배송비']
+goods_clear['기본판매가'] = goods_clear['구매원가']*fomul
+prime_cost = round(goods_clear['구매원가'].min())
 
 # ==============================================#####
-goods_clear['마진'] = round(goods_clear['기본판매가']-(goods_clear['기본판매가']*fee_naver/100)-goods_clear['구매원가'],-2)
+goods_clear['마진'] = goods_clear['기본판매가']-(goods_clear['기본판매가']*fee_naver/100)-goods_clear['구매원가']
 goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본판매가']*100,1)
 
 
@@ -284,14 +284,14 @@ price_min = goods_clear['기본판매가'].min()
 
 # ### 엑셀에 적힐 기본 판매가격 계산
 # * 옵션별 판매가격이 차이가 없을 경우는 최소 금액이 판매가격이 됨
-basePrice = np.int64(price_min)
+basePrice = np.int64(round(price_min,-2))
 
 # * 정해 놓은 마진 이상 남도록 최종판매가 다시 계산
 # * setting시트에서 불러온 최소마진 설정값과 1차 계산 시 도출된 마진의 최소값과 비교한다.
 # * 마진 리스트의 최소값이 < 최소마진(marginMin) 일 때 부족한 만큼 판매가격을 높여준다.
 
 if marginMin > goods_clear['마진'].min():
-    price_correction = round(((marginMin-goods_clear['마진'].min())*1.15),-2)
+    price_correction = round((marginMin-goods_clear['마진'].min())*1.15)
     price_correction = np.int64(round(price_correction,-2))
 
 else :
@@ -302,28 +302,25 @@ else :
 tune_marginPrice = basePrice + price_correction
 
 # 표시 판매가 계산
-dp_price = round(tune_marginPrice / (1-discount_rate/100),-2)
-dp_price = np.int64(dp_price)
-
+dp_price = np.int64(round(tune_marginPrice / (1-discount_rate/100),-2))
 goods_clear['옵션차액'] = round(goods_clear['기본판매가'] - price_min,-2)
 
 #할인금액 계산
-discount_price = dp_price - round(tune_marginPrice,-2)
-discount_price = np.int64(discount_price)
+discount_price = dp_price - tune_marginPrice
 
 # 메모란에 경고 메시지를 찍어 줄 것임.
-
 warningMemoList = []
 warningMemo =""
 
 # 옵션차액이 판매가의 50%를 넘을 경우 판매가를 재 조정한다.
 
-if goods_clear['옵션차액'].max() >= dp_price/2:
-    errorCorrectionPrice = np.int64(round(goods_clear['옵션차액'].max() *2 - dp_price/2,-2))
+if goods_clear['옵션차액'].max() >= dp_price*0.5:
+    errorCorrectionPrice = goods_clear['옵션차액'].max() * 2 - dp_price
     dp_price = dp_price + errorCorrectionPrice
     discount_price = discount_price + errorCorrectionPrice
-    warningMemoList.append(f'* 옵션차액은 판매가의 50%가 넘을 수 없습니다. 업로드 오류 방지를 위해 판매가와 할인가를 조정했습니다.\n* 실제 고객결제금액 및 마진과는 상관없음\n* [보정금액: {errorCorrectionPrice}원]')
-    print(Fore.YELLOW + '엑셀 시트의 메모란 확인 - 옵션차액이 50%가 넘는 옵션이 존재하여 판매가와 할인가를 조정하였습니다.'+Fore.RESET)
+    warningMemoList.append(f'* 스마트스토어 규정상 옵션 차액은 판매가의 50%를 넘을 수 없습니다.\n* 업로드 오류 방지를 위해 판매가와 할인가를 조정했습니다.\n* 실제 고객의 결제금액 및 마진과는 상관없음\n* [보정금액]: 판매가와 할인가에 각각 +{errorCorrectionPrice}원]')
+    print(Fore.YELLOW + '* 옵션차액이 50%가 넘는 옵션이 존재하여 판매가와 할인가를 조정하였습니다. 자세한 내용은 엑셀 시트의 <메모>란 확인 하세요. '+Fore.RESET)
+    
 else:
     pass
 
@@ -347,7 +344,7 @@ else:
 
 warningMemo = str("\n".join(warningMemoList))
 
-print('판매 가격 계산 완료!')
+print('6. 판매 가격 계산 완료!')
 
 
 # ### 옵션항목 뽑기
@@ -381,7 +378,7 @@ if optionColcnt == 6:
     dupPriceCnt2 = df_subset2.value_counts().sum(axis=0)
 
     if dupPriceCnt1 >= 2:
-        print("'첫번째 옵션이 가격을 결정합니다.'")
+        print("* [입력옵션] - 첫번째 옵션을 '주 옵션'으로 가격을 계산 합니다.")
         df_option1 = df_gc[optionT1].drop_duplicates()
                 
         for op in df_option1:
@@ -400,7 +397,7 @@ if optionColcnt == 6:
         optionPrice = deff_price + '\n' + zero_deff # optionPrice
 
     elif dupPriceCnt2 >= 2:
-        print('"두번째 옵션이 가격을 결정합니다."')
+        print("* [입력옵션] - 두번째 옵션을 '주 옵션'으로 가격을 계산 합니다.")
         df_option1 = df_gc[optionT2].drop_duplicates()
         
         for op in df_option1:
@@ -418,7 +415,7 @@ if optionColcnt == 6:
         optionPrice = zero_deff+'\n'+ deff_price
 
     else:
-        print('옵션의 가격이 모두 동일합니다.')
+        print('* [입력옵션] - 옵션의 가격이 모두 동일합니다.')
         df_option1 = df_gc[optionT1].drop_duplicates()
         for op in df_option1:
             option_deff = goods_clear.loc[goods_clear[optionT2] == op]
@@ -471,7 +468,7 @@ elif optionColcnt == 5:
     txtOption1 = df_gc[optionT1].drop_duplicates()
     df_OpDescTitle = txtOption1
 
-print('옵션 작성 완료!')
+print('7. 옵션 작성 완료!')
 
 #상세페이지 작성 시작
 
@@ -575,7 +572,7 @@ else:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
 
-print("상세페이지 작성 완료!")
+print("8. 상세페이지 작성 완료!")
 
 # ### 엑셀에 기재될 배송비
 if ship_method == "유료":
@@ -634,7 +631,7 @@ else:
     print(Fore.RED + "오류 - 메인이미지 폴더에 이미지가 없습니다.")
     mainImage = ""
     subImages = ""
-print(Fore.RESET + "메인이미지 수정/이동 완료!")
+print(Fore.RESET + "9. 메인이미지 이름 변경/폴더 이동 완료!")
 
 #스마트스토어 필드명 불러오기
 
@@ -764,7 +761,7 @@ ws["CQ2"].value = strCalevel4
 
 new_fileName = ('./excel/'+productCord+'_'+'개인용'+'_'+tday_s+'.xlsx')
 wb.save(new_fileName)
-print("개인용파일 작성완료!")
+print("10. 개인용파일 작성완료!")
 
 store_field2 = pd.read_excel('./product.xlsx', sheet_name = 'store', header = 0)
 storeField_list2 = list(store_field2['네이버'])
@@ -875,7 +872,7 @@ p_ws["CP2"].value = strCalevel3
 p_ws["CQ2"].value = strCalevel4
 new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
-print("배포용파일 작성완료!")
+print("11. 배포용파일 작성완료!")
 
 # 이미지 저장용 폴더 생성
 
@@ -902,7 +899,7 @@ createFolder(pathDesc)
 createFolder(pathOption)
 createFolder(pathBackup)
 
-print('이미지 폴더 생성 완료!'+'\n')
+print('12. 다운로드 폴더 생성 완료!'+'\n')
 
 # 옵션 이미지 다운로드
 optionNum = 0
