@@ -5,8 +5,8 @@ block_cipher = None
 
 
 a = Analysis(
-    ['excelmaker_p_kor.py'],
-    pathex=['D:\_dev\excelmaker_p\excelmaker_p_kor'],
+    ['excelmaker_cn.py'],
+    pathex=['D:\_dev\excelmaker_p'],
     binaries=[],
     datas=[],
     hiddenimports=['numpy','os','configparser','logging.config','BeautifulSoup','urlopen'],
@@ -28,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='excelmaker_v0.9.7.3',
+    name='excelmaker_cn0.9.2',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
