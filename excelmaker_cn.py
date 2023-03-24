@@ -1,8 +1,16 @@
 from colorama import init, Fore
 import numpy as np
+#프린트문 색상 변경을 위해 초기화
+np.set_printoptions(threshold=np.inf, linewidth=np.inf)
+init()
+
+print(Fore.LIGHTBLUE_EX + "你好？今天也度过愉快的一天吧。작성을 시작 합니다. 작성중..." )
+print(Fore.RESET)
+
 import pandas as pd
 import openpyxl
-from  openpyxl.styles  import  Font
+from  openpyxl.styles  import Alignment
+from  openpyxl.styles.fonts  import  Font
 import random
 import re
 import os
@@ -16,68 +24,11 @@ from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
 
-#프린트문 색상 변경을 위해 초기화
-np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-init()
-print(Fore.LIGHTBLUE_EX + "엑셀파일 작성을 시작 합니다. 작성중..." )
-print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
 # * 엑셀에서 setting 시트 (셋팅시트) 추출
-
-
-def loadPassword():
-    basedir = os.getcwd()
-    ini_dir = os.path.join(basedir,'set.ini')
-
-    # pc set.ini 파일의 저장된 pass워드 읽어오기
-    properties = configparser.ConfigParser()
-    properties.read(ini_dir)
-    password = properties['DEFAULT']['UserPass']
-    return password
-
-#웹에있는 password 텍스트 추출 함수
-def getPtag(url):
-    try:
-        html = urlopen(url)
-        
-    except HTTPError as e:
-        return None
-    try:
-        soup = BeautifulSoup(html,"html.parser")
-        ptag = soup.find('p')
-        
-    except AttributeError as e:
-        return None
-    return ptag.text
-
-#관리자 패스워드가 저장된 웹페이지 url을 전달하여 getPtag 함수 실행
-password = loadPassword()
-passTag = getPtag("https://sites.google.com/view/test-exceldoc/pass")
-
-def judge(password,passTag):
-    if password == passTag:
-        properties = configparser.ConfigParser()
-        properties.set('DEFAULT','UserPass',password)
-        with open('./set.ini','w',encoding='utf-8') as F:
-            properties.write(F)
-                
-        print("이번 달 패스워드 확인 완료! 오늘도 파이팅!")
-        pass
-    else:
-        print(Fore.RED + "오류 - 저장된 패스워드가 없거나 올바른 패스워드가 아닙니다. 패스워드는 단체방 금월 암호 공지를 확인하세요."+Fore.RESET+'\n')
-        inputPass(password,passTag)
-
-def inputPass(password,passTag):
-    userpass = password
-    passTag = passTag
-    userpass = ""
-    print('\n' + "패스워드를 입력해 주세요.")
-    userPass = input()
-    judge(userPass, passTag)
-
-judge(password,passTag)
+#중국버전에는 로그인 체크 하지 않음
 
 try:
     df = pd.read_excel('./product.xlsx', sheet_name = 'write', header = 0)
@@ -95,7 +46,7 @@ except FileNotFoundError as e:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
-    
+
 set_list = list(setpd['입력값'])
 nickName = set_list[0]  #닉네임
 as_info = set_list[1]   #as안내 내용
@@ -343,8 +294,6 @@ else:
 warningMemo = str("\n".join(warningMemoList))
 
 print('6. 판매 가격 계산 완료!')
-
-
 # ### 옵션항목 뽑기
 option_list1 = []
 option_list2 = []
@@ -872,7 +821,7 @@ new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
 print("11. 배포용파일 작성완료!")
 
-# 이미지 저장용 폴더 생성
+# 이미지 저장용 폴더 생성(중국버전에서는 이미지 다운로드 제외)
 
 tday = time.time()
 fday = time.strftime('%Y%m%d',time.localtime(time.time()))
@@ -899,7 +848,8 @@ createFolder(pathBackup)
 
 print('12. 다운로드 폴더 생성 완료!'+'\n')
 
-# 옵션 이미지 다운로드
+# 옵션 이미지 다운로드(중국버전에서는 다운하지 않음)
+'''
 optionNum = 0
 ###
 try:
@@ -910,7 +860,7 @@ try:
         
         time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
-        print(Fore.GREEN + str(optionNum)+'번 옵션 이미지 다운로드 성공'+Fore.RESET)
+        print(str(optionNum)+'번 옵션 이미지 다운로드 성공')
         optionNum +=1
         
     # 상세 이미지 다운로드
@@ -922,35 +872,28 @@ try:
 
 except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.')
-    print(Fore.RESET + str(optionNum)+'번 상세 이미지주소: ',i)
-    print("엔터를 누르면 종료합니다.")
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
+
 
 try:    
     for i in modUrls: 
         file_ext = i.split('.')[-1] # 확장자 추출
         path = pathDesc + '/' + productCord + '_desc_' + str(descimgNum)+'.' + file_ext
-        random_number = round(random.uniform(0.02, 0.3), 2)
+        random_number = round(random.uniform(0.02, 0.2), 2)
         
         time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
-        print(Fore.GREEN +  str(descimgNum)+'번 상세 이미지 다운로드 성공' + Fore.RESET)
+        print(str(descimgNum)+'번 상세 이미지 다운로드 성공')
         descimgNum +=1
 
 except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 해외쇼핑몰 로그인이 필요하거나 올바른 상세 url이 아닙니다.')
-    print(str(descimgNum)+'번 오류 상세 이미지주소: ',i)
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
-    
-except urllib.error.URLError:
-    print(Fore.RED + '오류 - 올바른 상세 url이 아닙니다.')
-    print('오류 있는 '+str(descimgNum)+'번째 상세 이미지 주소: ',i,'\n(url을 콘트롤키+클릭하면 브라우저에서 오픈합니다.)\n')
-    print(Fore.RESET + "엔터를 누르면 종료합니다.")
-    aInput = input("")
-    sys.exit()
+'''
 
 fVideoUrl = open('./excel/' + productCord + '/동영상주소.txt','w')
 fVideoUrl.write(videourl)    
@@ -958,6 +901,5 @@ fVideoUrl.close()
 
 copy_df = df
 copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+productCord+'_'+tday_s+'.xlsx', index=False)
-
 print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")
