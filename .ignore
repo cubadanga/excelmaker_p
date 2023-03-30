@@ -9,6 +9,7 @@
 excel/
 소싱리스트/
 excelmaker_p/
+.venv/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
