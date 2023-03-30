@@ -1,16 +1,8 @@
 from colorama import init, Fore
 import numpy as np
-#프린트문 색상 변경을 위해 초기화
-np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-init()
-
-print(Fore.LIGHTBLUE_EX + "你好？今天也度过愉快的一天吧。작성을 시작 합니다. 작성중..." )
-print(Fore.RESET)
-
 import pandas as pd
 import openpyxl
-from  openpyxl.styles  import Alignment
-from  openpyxl.styles.fonts  import  Font
+from  openpyxl.styles  import  Font
 import random
 import re
 import os
@@ -24,6 +16,11 @@ from urllib.parse import urlparse, parse_qs
 import configparser
 from bs4 import BeautifulSoup
 
+#프린트문 색상 변경을 위해 초기화
+np.set_printoptions(threshold=np.inf, linewidth=np.inf)
+init()
+print(Fore.LIGHTBLUE_EX + "你好？今天也度过愉快的一天吧。작성을 시작 합니다. 작성중..." )
+print(Fore.RESET)
 
 # ### 유저설정 시트와 상품정보 시트 추출
 # * 엑셀에서 price 시트(입력시트) 추출
@@ -221,6 +218,7 @@ goods_clear['기본판매가'] = goods_clear['구매원가']*fomul
 prime_cost = round(goods_clear['구매원가'].min())
 
 # ==============================================#####
+
 goods_clear['마진'] = goods_clear['기본판매가']-(goods_clear['기본판매가']*fee_naver/100)-goods_clear['구매원가']
 goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본판매가']*100,1)
 
@@ -274,7 +272,7 @@ else:
     pass
 
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
-if ship_method == "유료":
+if ship_method == "유료" or "수량별":
     finalPrice = dp_price-rship_price
     finalPrice = np.int64(round(finalPrice,-2))
 
@@ -451,6 +449,7 @@ try:
     img_optionTag = img_optionTag.str.replace("'/>",'')
     img_optionTag = img_optionTag.str.replace('" />','')
     img_optionTag = img_optionTag.str.replace("' />",'')
+    img_optionTag = img_optionTag.str.replace('\n','')
     op_imgurls = img_optionTag.values.tolist()
 except KeyError:
     print(Fore.RED + '오류 - 옵션이미지 필드에 url이 없거나 잘못 되었습니다.')
@@ -522,7 +521,7 @@ else:
 print("8. 상세페이지 작성 완료!")
 
 # ### 엑셀에 기재될 배송비
-if ship_method == "유료":
+if ship_method == "유료" or "수량별":
     ship_price = rship_price
 
 else:
@@ -607,7 +606,7 @@ tday_f = time.strftime('%Y-%m-%d',time.localtime(time.time()))
 ws["A2"].value = "신상품"
 ws["B2"].value = categori_num
 ws["C2"].value = pName
-ws["D2"].value = dp_price
+ws["D2"].value = finalPrice
 ws["E2"].value = "999"
 ws["F2"].value = as_info
 ws["G2"].value = as_tel
@@ -720,7 +719,7 @@ p_ws.append(storeField_list2)
 p_ws["A2"].value = "신상품"
 p_ws["B2"].value = categori_num
 p_ws["C2"].value = pName
-p_ws["D2"].value = dp_price
+p_ws["D2"].value = finalPrice
 p_ws["E2"].value = "999"
 p_ws["F2"].value = "as_info"
 p_ws["G2"].value = "000-000-0000"
@@ -872,7 +871,8 @@ try:
 
 except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 크롬 브라우저로 타오바오에 로그인이 필요하거나 올바른 옴션 url이 아닙니다.')
-    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    print(Fore.RESET + str(optionNum)+'번 상세 이미지주소: ',i)
+    print("엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
 
@@ -881,15 +881,23 @@ try:
     for i in modUrls: 
         file_ext = i.split('.')[-1] # 확장자 추출
         path = pathDesc + '/' + productCord + '_desc_' + str(descimgNum)+'.' + file_ext
-        random_number = round(random.uniform(0.02, 0.2), 2)
+        random_number = round(random.uniform(0.02, 0.3), 2)
         
         time.sleep(random_number)
         urllib.request.urlretrieve(i, path)
-        print(str(descimgNum)+'번 상세 이미지 다운로드 성공')
+        print(Fore.GREEN +  str(descimgNum)+'번 상세 이미지 다운로드 성공' + Fore.RESET)
         descimgNum +=1
 
 except urllib.error.HTTPError:
     print(Fore.RED + '오류 - 해외쇼핑몰 로그인이 필요하거나 올바른 상세 url이 아닙니다.')
+    print(str(descimgNum)+'번 오류 상세 이미지주소: ',i)
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
+
+except urllib.error.URLError:
+    print(Fore.RED + '오류 - 올바른 상세 url이 아닙니다.')
+    print('오류 있는 '+str(descimgNum)+'번째 상세 이미지 주소: ',i,'\n(url을 콘트롤키+클릭하면 브라우저에서 오픈합니다.)\n')
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
@@ -901,5 +909,6 @@ fVideoUrl.close()
 
 copy_df = df
 copy_df = df.to_excel(excel_writer=pathBackup+'/product_'+productCord+'_'+tday_s+'.xlsx', index=False)
+
 print('\n'+ Fore.LIGHTBLUE_EX + "완성! 엔터를 누르면 종료합니다." + Fore.RESET)
 aInput = input("")

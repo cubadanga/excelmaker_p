@@ -34,8 +34,15 @@ def loadPassword():
     # pc set.ini 파일의 저장된 pass워드 읽어오기
     properties = configparser.ConfigParser()
     properties.read(ini_dir)
-    password = properties['DEFAULT']['UserPass']
-    return password
+    
+    if 'DEFAULT' in properties and 'userpass' in properties['DEFAULT']:
+        password = properties['DEFAULT']['userpass']
+        return password
+    else:
+        print(Fore.RED + "오류 - 'userpass' key not found in set.ini file."+'\n')
+        print(Fore.RESET + "엔터를 누르면 종료합니다.")
+        aInput = input("")
+        sys.exit()
 
 #웹에있는 password 텍스트 추출 함수
 def getPtag(url):
@@ -43,7 +50,10 @@ def getPtag(url):
         html = urlopen(url)
         
     except HTTPError as e:
-        return None
+        print(Fore.RED + '오류 - 네트워크오류 또는 패스워드url오류'+'\n')
+        print(Fore.RESET + "엔터를 누르면 종료합니다.")
+        aInput = input("")
+        sys.exit()
     try:
         soup = BeautifulSoup(html,"html.parser")
         ptag = soup.find('p')
@@ -59,7 +69,7 @@ passTag = getPtag("https://sites.google.com/view/test-exceldoc/pass")
 def judge(password,passTag):
     if password == passTag:
         properties = configparser.ConfigParser()
-        properties.set('DEFAULT','UserPass',password)
+        properties.set('DEFAULT','userpass',password)
         with open('./set.ini','w',encoding='utf-8') as F:
             properties.write(F)
                 
@@ -95,6 +105,7 @@ except FileNotFoundError as e:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
+
     
 set_list = list(setpd['입력값'])
 nickName = set_list[0]  #닉네임
@@ -270,6 +281,7 @@ goods_clear['기본판매가'] = goods_clear['구매원가']*fomul
 prime_cost = round(goods_clear['구매원가'].min())
 
 # ==============================================#####
+
 goods_clear['마진'] = goods_clear['기본판매가']-(goods_clear['기본판매가']*fee_naver/100)-goods_clear['구매원가']
 goods_clear['마진율'] = round(goods_clear['마진']/goods_clear['기본판매가']*100,1)
 
@@ -323,7 +335,7 @@ else:
     pass
 
 # * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
-if ship_method == "유료":
+if ship_method == "유료" or "수량별":
     finalPrice = dp_price-rship_price
     finalPrice = np.int64(round(finalPrice,-2))
 
@@ -343,8 +355,6 @@ else:
 warningMemo = str("\n".join(warningMemoList))
 
 print('6. 판매 가격 계산 완료!')
-
-
 # ### 옵션항목 뽑기
 option_list1 = []
 option_list2 = []
@@ -502,6 +512,7 @@ try:
     img_optionTag = img_optionTag.str.replace("'/>",'')
     img_optionTag = img_optionTag.str.replace('" />','')
     img_optionTag = img_optionTag.str.replace("' />",'')
+    img_optionTag = img_optionTag.str.replace('\n','')
     op_imgurls = img_optionTag.values.tolist()
 except KeyError:
     print(Fore.RED + '오류 - 옵션이미지 필드에 url이 없거나 잘못 되었습니다.')
@@ -573,7 +584,7 @@ else:
 print("8. 상세페이지 작성 완료!")
 
 # ### 엑셀에 기재될 배송비
-if ship_method == "유료":
+if ship_method == "유료" or "수량별":
     ship_price = rship_price
 
 else:
@@ -658,7 +669,7 @@ tday_f = time.strftime('%Y-%m-%d',time.localtime(time.time()))
 ws["A2"].value = "신상품"
 ws["B2"].value = categori_num
 ws["C2"].value = pName
-ws["D2"].value = dp_price
+ws["D2"].value = finalPrice
 ws["E2"].value = "999"
 ws["F2"].value = as_info
 ws["G2"].value = as_tel
@@ -771,7 +782,7 @@ p_ws.append(storeField_list2)
 p_ws["A2"].value = "신상품"
 p_ws["B2"].value = categori_num
 p_ws["C2"].value = pName
-p_ws["D2"].value = dp_price
+p_ws["D2"].value = finalPrice
 p_ws["E2"].value = "999"
 p_ws["F2"].value = "as_info"
 p_ws["G2"].value = "000-000-0000"
@@ -872,7 +883,7 @@ new_fileName = ('./excel/'+productCord+'_'+'배포용'+'_'+tday_s+'.xlsx')
 p_wb.save(new_fileName)
 print("11. 배포용파일 작성완료!")
 
-# 이미지 저장용 폴더 생성
+# 이미지 저장용 폴더 생성product
 
 tday = time.time()
 fday = time.strftime('%Y%m%d',time.localtime(time.time()))
@@ -944,7 +955,7 @@ except urllib.error.HTTPError:
     print(Fore.RESET + "엔터를 누르면 종료합니다.")
     aInput = input("")
     sys.exit()
-    
+
 except urllib.error.URLError:
     print(Fore.RED + '오류 - 올바른 상세 url이 아닙니다.')
     print('오류 있는 '+str(descimgNum)+'번째 상세 이미지 주소: ',i,'\n(url을 콘트롤키+클릭하면 브라우저에서 오픈합니다.)\n')
