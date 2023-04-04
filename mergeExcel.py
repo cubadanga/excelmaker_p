@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import time
 from datetime import date
-import shutil
 import sys
 
 print('\033[96m' + '파일 합치기를 시작합니다.'+ '\033[0m' + '\n')

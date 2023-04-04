@@ -219,10 +219,17 @@ else:
 # * price 시트의 행이 가변될 때 추출할 범위도 가변시켜 해당 옵션명을 받아온다.
 # * 옵션의 조합이 몇개인지 판단하여 빈열 삭제
 
-df_goods = df.iloc[0:,5:7]
-df_goods.replace('', np.nan, inplace=True)
-goods_Tclear = df_goods.dropna(axis=1)
-colcount = len(goods_Tclear.columns)
+try:
+    df_goods = df.iloc[0:,5:7]
+    df_goods.replace('', np.nan, inplace=True)
+    goods_Tclear = df_goods.dropna(axis=1)
+    colcount = len(goods_Tclear.columns)
+    
+except KeyError:
+    print(Fore.RED + '오류 - 옵션 금액 또는 옵션내용이 잘못 기입 되었습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
 
 gooddf = goods_Tclear.columns
 optionTitle = str("\n".join(gooddf))

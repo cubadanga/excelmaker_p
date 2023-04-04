@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['excelmaker_p.py'],
+    ['excelmaker.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -28,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='excelmaker_p',
+    name='excelmaker',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

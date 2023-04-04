@@ -151,11 +151,17 @@ else:
 # * price 시트의 옵션명이 적혀있는 3개 행의 필드명을 추출하여 ','으로 구분하여 합친다.
 # * price 시트의 행이 가변될 때 추출할 범위도 가변시켜 해당 옵션명을 받아온다.
 # * 옵션의 조합이 몇개인지 판단하여 빈열 삭제
-
-df_goods = df.iloc[0:,5:7]
-df_goods.replace('', np.nan, inplace=True)
-goods_Tclear = df_goods.dropna(axis=1)
-colcount = len(goods_Tclear.columns)
+try:
+    df_goods = df.iloc[0:,5:7]
+    df_goods.replace('', np.nan, inplace=True)
+    goods_Tclear = df_goods.dropna(axis=1)
+    colcount = len(goods_Tclear.columns)
+    
+except KeyError:
+    print(Fore.RED + '오류 - 옵션 금액 또는 옵션내용이 잘못 기입 되었습니다.')
+    print(Fore.RESET + "엔터를 누르면 종료합니다.")
+    aInput = input("")
+    sys.exit()
 
 gooddf = goods_Tclear.columns
 optionTitle = str("\n".join(gooddf))
@@ -255,26 +261,36 @@ discount_price = dp_price - tune_marginPrice
 warningMemoList = []
 warningMemo =""
 
+# * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
 # 옵션차액이 판매가의 50%를 넘을 경우 판매가를 재 조정한다.
 
 if goods_clear['옵션차액'].max() >= dp_price*0.5:
-    errorCorrectionPrice = goods_clear['옵션차액'].max() * 2 - dp_price
-    dp_price = dp_price + errorCorrectionPrice
+    
+    if ship_method == "무료":
+        errorCorrectionPrice = goods_clear['옵션차액'].max() * 2 - dp_price + 1000
+        finalPrice = dp_price + errorCorrectionPrice
+        print("* [배송선택] - 무료배송")
+        
+    elif ship_method == "유료" or "수량별":
+        errorCorrectionPrice = goods_clear['옵션차액'].max() * 2 - dp_price - rship_price  + 1000
+        finalPrice = dp_price + errorCorrectionPrice
+        print("* [배송선택] - 유료 or 수량별 배송")
+
     discount_price = discount_price + errorCorrectionPrice
+    finalPrice = np.int64(round(finalPrice,-2))
     warningMemoList.append(f'* 스마트스토어 규정상 옵션 차액은 판매가의 50%를 넘을 수 없습니다.\n* 업로드 오류 방지를 위해 판매가와 할인가를 조정했습니다.\n* 실제 고객의 결제금액 및 마진과는 상관없음\n* [보정금액]: 판매가와 할인가에 각각 +{errorCorrectionPrice}원]')
     print(Fore.YELLOW + '* 옵션차액이 50%가 넘는 옵션이 존재하여 판매가와 할인가를 조정하였습니다. 자세한 내용은 엑셀 시트의 <메모>란 확인 하세요. '+Fore.RESET)
     
-else:
-    pass
-
-# * 배송비 셋팅에서 유료 배송일 경우 판매가격에서 배송비를 차감하고 배송비 필드에 배송비 셋팅값을 입력한다.
-if ship_method == "유료" or "수량별":
-    finalPrice = dp_price-rship_price
-    finalPrice = np.int64(round(finalPrice,-2))
 
 else:
-    finalPrice = dp_price
-    finalPrice = np.int64(round(finalPrice,-2))
+    if ship_method == "유료" or "수량별":
+        print("* [배송선택] - 유료배송")
+        finalPrice = dp_price-rship_price
+        finalPrice = np.int64(round(finalPrice,-2))
+    else:
+        print("* [배송선택] - 유료 or 수량별 배송")
+        finalPrice = dp_price
+        finalPrice = np.int64(round(finalPrice,-2))
 
 tuneMargin = round(tune_marginPrice-goods_clear['구매원가'].min()-(tune_marginPrice*fee_naver/100),-2)
 tuneMarginRate = round(tuneMargin/tune_marginPrice*100,0)
